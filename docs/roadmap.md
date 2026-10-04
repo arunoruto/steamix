@@ -139,6 +139,15 @@ per-game toggle in the Quick Access menu, editing the same profiles, would
 make it feel native in Gaming Mode; the existing Decky plugin installs its own
 copy of the layer, so it does not fit as is.
 
+### Upscaling
+
+Done (2026-10-04): `steamix.proton.fsr4` adds a "GE-Proton (FSR 4)"
+compatibility tool, which upgrades games that ship FSR 3.1 to AMD's FSR 4 on
+RDNA 3 and 4. FSR 1 is gamescope's scaling filter and already works.
+OptiScaler (FSR or XeSS in games that only offer DLSS) is left out: most
+current games ship both, and it is a per-game DLL drop that resists being
+declared.
+
 ### Streaming and scheduler
 
 Cheap wins on top of upstream options:

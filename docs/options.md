@@ -355,6 +355,44 @@ variable it reads the path from (`LSFG_CONFIG` or `LSFGVK_CONFIG`). For 2.0,
 permit it. Its licence also forbids redistribution, so no binary cache
 carries it, Steamix's included, and it builds on your machine.
 
+## `steamix.proton`
+
+[GE-Proton](https://github.com/GloriousEggroll/proton-ge-custom), and AMD
+FSR 4 through it.
+
+| Option | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `.ge.enable` | `bool` | `false` | Install GE-Proton as a compatibility tool. |
+| `.ge.package` | `package` | `pkgs.proton-ge-bin` | Which GE-Proton; also what the FSR 4 variant is built from. |
+| `.fsr4.enable` | `bool` | `false` | Add a "GE-Proton (FSR 4)" compatibility tool. |
+| `.fsr4.version` | `null or str` | `null` | The FSR 4 DLL version to ask for, e.g. `"4.1.1"`; `null` takes GE-Proton's default. |
+| `.fsr4.indicator` | `bool` | `false` | Draw AMD's FSR watermark, to see whether FSR 4 is active. |
+
+**FSR 4** is AMD's machine-learning upscaler. GE-Proton can swap it in for
+the FSR 3.1 a game ships: with `PROTON_FSR4_UPGRADE` set, it downloads AMD's
+FSR 4 DLL when the game starts and uses it instead. It needs an AMD RDNA 3 or
+RDNA 4 GPU and a game with FSR 3.1, and a network connection the first time.
+The DLL is GE-Proton's download, not something Nix manages.
+
+`fsr4.enable` adds GE-Proton with that flag in front of it, as its own
+compatibility tool: "GE-Proton (FSR 4)", internal name `GE-Proton-FSR4`. It
+sits next to a plain GE-Proton instead of replacing it, so the two never
+clash. Pick it per game in Steam (Properties > Compatibility), or make it
+Steam's default compatibility tool to use it everywhere. A game's launch
+options still win: `PROTON_FSR4_UPGRADE=0 %command%` turns it off for that
+game, and `PROTON_FSR4_UPGRADE=4.1.1 %command%` pins a version.
+
+```nix
+steamix.proton.fsr4 = {
+  enable = true;
+  indicator = true; # until you have seen it work
+};
+```
+
+**FSR 1** is a different thing and needs nothing: gamescope's FSR 1
+upscaler is the "Scaling Filter" in Gaming Mode's Quick Access menu, under
+Performance, for games that render below the display's resolution.
+
 ## `steamix.decky-loader`
 
 [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) injects a

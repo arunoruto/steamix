@@ -227,9 +227,145 @@ let
       ) uiWithProfiles.warnings) "no warning")
     ];
 
-  cases = heroicCases ++ losslessScalingCases;
+  # A stand-in for proton-ge-bin's steamcompattool: the real manifest layout,
+  # and a `proton` that reports how it was started instead of running Wine.
+  geStub =
+    pkgs.runCommand "proton-ge-bin-GE-Proton-stub"
+      {
+        outputs = [
+          "out"
+          "steamcompattool"
+        ];
+      }
+      ''
+        echo stub > "$out"
+        mkdir "$steamcompattool"
+        cat > "$steamcompattool/compatibilitytool.vdf" <<'EOF'
+        "compatibilitytools"
+        {
+          "compat_tools"
+          {
+            "GE-Proton" // Internal name of this tool
+            {
+              "install_path" "."
+              "display_name" "GE-Proton"
+              "from_oslist"  "windows"
+              "to_oslist"    "linux"
+            }
+          }
+        }
+        EOF
+        echo '"manifest" { "commandline" "/proton %verb%" }' > "$steamcompattool/toolmanifest.vdf"
+        cat > "$steamcompattool/proton" <<'EOF'
+        #!${pkgs.runtimeShell}
+        echo "argv0=$0"
+        echo "args=$*"
+        echo "PROTON_FSR4_UPGRADE=''${PROTON_FSR4_UPGRADE-unset}"
+        echo "PROTON_FSR4_INDICATOR=''${PROTON_FSR4_INDICATOR-unset}"
+        EOF
+        chmod +x "$steamcompattool/proton"
+      '';
+
+  protonCases =
+    let
+      withProton = extra: evalWith (lib.recursiveUpdate { steamix.enable = true; } extra);
+      compat = config: config.programs.steam.extraCompatPackages;
+      names = config: map (p: p.name) (compat config);
+
+      off = withProton { };
+      geOnly = withProton {
+        steamix.proton.ge = {
+          enable = true;
+          package = geStub;
+        };
+      };
+      fsr4 = withProton {
+        steamix.proton = {
+          ge.package = geStub;
+          fsr4.enable = true;
+        };
+      };
+      fsr4Pinned = withProton {
+        steamix.proton = {
+          ge.package = geStub;
+          fsr4 = {
+            enable = true;
+            version = "4.1.1";
+            indicator = true;
+          };
+        };
+      };
+      both = withProton {
+        steamix.proton = {
+          ge = {
+            enable = true;
+            package = geStub;
+          };
+          fsr4.enable = true;
+        };
+      };
+
+      tool = config: (lib.head (compat config)).steamcompattool;
+      launcher = config: builtins.readFile "${tool config}/proton";
+      manifest = config: builtins.readFile "${tool config}/compatibilitytool.vdf";
+    in
+    [
+      (check "GE-Proton is not installed by default" (names off == [ ]) (builtins.toJSON (names off)))
+      (check "ge.enable installs GE-Proton as it is" (names geOnly == [ geStub.name ]) (
+        builtins.toJSON (names geOnly)
+      ))
+      (check "fsr4.enable adds only the FSR 4 variant" (names fsr4 == [ "${geStub.name}-fsr4" ]) (
+        builtins.toJSON (names fsr4)
+      ))
+      (check "with ge.enable too, both are there" (
+        names both == [
+          geStub.name
+          "${geStub.name}-fsr4"
+        ]
+      ) (builtins.toJSON (names both)))
+      (check "the wrapper asks for the default FSR 4 unless told otherwise" (
+        lib.hasInfix "PROTON_FSR4_UPGRADE-1}" (launcher fsr4)
+        && !lib.hasInfix "PROTON_FSR4_INDICATOR" (launcher fsr4)
+      ) (launcher fsr4))
+      (check "version and indicator reach the wrapper" (
+        lib.hasInfix "PROTON_FSR4_UPGRADE-4.1.1}" (launcher fsr4Pinned)
+        && lib.hasInfix "PROTON_FSR4_INDICATOR-1}" (launcher fsr4Pinned)
+      ) (launcher fsr4Pinned))
+      (check "it is GE-Proton (FSR 4) under its own internal name" (
+        lib.hasInfix ''"display_name" "GE-Proton (FSR 4)"'' (manifest fsr4)
+        && lib.hasInfix ''"GE-Proton-FSR4" // Internal name'' (manifest fsr4)
+      ) (manifest fsr4))
+    ];
+
+  # Run the wrapped launcher against the stub: the flag arrives, the real
+  # launcher is started by its own path (Proton finds its files from that),
+  # arguments pass through, and a game's own setting wins.
+  wrapperRuns =
+    let
+      eval = evalWith {
+        steamix.enable = true;
+        steamix.proton = {
+          ge.package = geStub;
+          fsr4.enable = true;
+        };
+      };
+      tool = (lib.head eval.programs.steam.extraCompatPackages).steamcompattool;
+    in
+    ''
+      ran=$(${tool}/proton waitforexitandrun game.exe)
+      echo "$ran"
+      grep -qx "argv0=${geStub.steamcompattool}/proton" <<<"$ran"
+      grep -qx "args=waitforexitandrun game.exe" <<<"$ran"
+      grep -qx "PROTON_FSR4_UPGRADE=1" <<<"$ran"
+      grep -qx "PROTON_FSR4_INDICATOR=unset" <<<"$ran"
+      ran=$(PROTON_FSR4_UPGRADE=0 ${tool}/proton run game.exe)
+      grep -qx "PROTON_FSR4_UPGRADE=0" <<<"$ran"
+    '';
+
+  cases = heroicCases ++ losslessScalingCases ++ protonCases;
 in
 assert lib.all (x: x) cases;
 pkgs.runCommand "steamix-options" { } ''
-  echo "${toString (lib.length cases)} option checks passed" > "$out"
+  ${wrapperRuns}
+  echo "${toString (lib.length cases)} option checks passed, and the FSR 4 wrapper runs" > "$out"
 ''

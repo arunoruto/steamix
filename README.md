@@ -86,6 +86,8 @@ that breaks something is one boot-menu entry away from being undone.
   Lutris, itch.io and others installed, with artwork, on every login.
 - **Lossless Scaling frame generation** for Steam's games through lsfg-vk,
   with per-game profiles declared in Nix or edited in its UI.
+- **AMD FSR 4** in games that ship FSR 3.1, through a "GE-Proton (FSR 4)"
+  compatibility tool.
 - **SteamOS Manager** for the controls Steam reaches through it, including
   TDP, GPU and performance profiles on the handhelds it recognises.
 - **A binary cache** for everything nixpkgs does not build, so installs
@@ -190,6 +192,15 @@ steamix.losslessScaling = {
 };
 ```
 
+GE-Proton, plus a variant that upgrades FSR 3.1 games to FSR 4 on AMD cards:
+
+```nix
+steamix.proton = {
+  ge.enable = true;
+  fsr4.enable = true;
+};
+```
+
 The SteamOS-shaped login path, where Steam switches sessions through SteamOS
 Manager:
 
@@ -222,6 +233,7 @@ and [hardware setup & tuning](https://arunoruto.github.io/steamix/hardware-and-t
 - [x] Heroic Games Launcher as an option
 - [x] Games from other launchers in the Steam library, with BoilR
 - [x] Lossless Scaling frame generation, with lsfg-vk
+- [x] GE-Proton, and FSR 4 through it
 - [ ] Emulators and ROMs in the Steam library
 - [ ] Handheld support with Handheld Daemon
 - [ ] A settings GUI for people who would rather not edit Nix

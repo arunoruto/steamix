@@ -22,6 +22,7 @@ in
     ./heroic.nix
     ./library.nix
     ./lossless-scaling.nix
+    ./proton.nix
     ./manager.nix
     ./gaming-mode.nix
     ./tweaks.nix
