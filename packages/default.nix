@@ -2,8 +2,8 @@
 # module can drive but nixpkgs does not package, and the Decky plugin scope.
 #
 # Takes a plain nixpkgs `pkgs` and returns an attrset shaped like what the
-# overlay adds — so the same file backs `overlays.default`, the flake's
-# `packages` output, and the parent repo's legacyPackages re-export.
+# overlay adds — so the same file backs `overlays.default` and the flake's
+# `packages` output.
 { pkgs }:
 {
   steamos-manager = pkgs.callPackage ./steamos-manager/package.nix { };

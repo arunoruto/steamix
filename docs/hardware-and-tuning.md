@@ -40,26 +40,22 @@ sudo nix run \
 Then wire it in:
 
 ```nix
-# outside this repo — the module ships with nixpkgs, nothing to import:
+# the module ships with nixpkgs, nothing to import:
 hardware.facter.reportPath = ./facter.json;
 ```
 
-In this repo, just drop `facter.json` into `systems/<arch>/<host>/` — it is
-picked up automatically.
-
 **Re-run it after every hardware change.** A stale report is silently wrong:
-when yhwach's GTX 1060 made way for the RX 9060 XT, the old report kept
-describing the nvidia card, and AMD-specific extras gated on detection (like
-`hardware.amdgpu.opencl` in this repo's `hosts.amd.gpu` module) stayed off
-until the report was regenerated.
+when a GTX 1060 made way for an RX 9060 XT, the old report kept describing
+the NVIDIA card, its driver ended up in the initrd, and AMD-specific extras
+gated on detection (like ROCm's OpenCL) stayed off until the report was
+regenerated.
 
 ## nixos-hardware: quirks other people already debugged
 
 [nixos-hardware](https://github.com/NixOS/nixos-hardware) is a community
 collection of per-device and per-component modules — the accumulated "this
 machine needs that kernel parameter" knowledge, packaged. If facter describes
-*what* hardware you have, nixos-hardware fixes *how* it behaves. When the
-Steamix repo split happens, a guide like this one definitely belongs in it.
+*what* hardware you have, nixos-hardware fixes *how* it behaves.
 
 Add the input, then import either a **named machine profile** (best case:
 someone with your exact machine already did the work):
@@ -71,7 +67,8 @@ imports = [ inputs.nixos-hardware.nixosModules.framework-13-7040-amd ];
 ```
 
 …or compose from the **generic building blocks** under `common/` when there is
-no profile for your machine. That is what yhwach does:
+no profile for your machine, for example a Coffee Lake desktop with a Radeon
+card:
 
 ```nix
 imports = [
@@ -130,8 +127,6 @@ boot.kernelPackages = pkgs.linuxPackages_latest;
 programs.steam.extraCompatPackages = [ pkgs.proton-ge-bin ];
 ```
 
-(In this repo the `gaming` tag already adds this from `pkgs.unstable`.)
-
 **Controllers.** `programs.steam` enables `hardware.steam-hardware` (udev
 rules for every controller Steam supports) by itself. On top of that:
 
@@ -155,7 +150,7 @@ covers most of it.
 
 - **Audio** must be configured by you (the module does not assume a sound
   stack): `services.pipewire.enable` plus its `alsa`/`pulse` sub-options is
-  the standard choice. In this repo the `desktop` tag handles it.
+  the standard choice.
 - **First boot lands in Steam's login screen** — initial setup (account,
   network if NetworkManager is present) happens inside the Deck UI itself.
 - **Firewall**: `programs.steam.remotePlay.openFirewall` and

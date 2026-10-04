@@ -1,11 +1,9 @@
 # Steamix — boot a NixOS machine straight into Steam's Gaming Mode, with a
-# switchable Desktop Mode, without the full Jovian stack. See docs/.
+# switchable Desktop Mode. See docs/ or https://arunoruto.github.io/steamix/.
 #
-# This flake currently lives inside a larger configuration repository, which
-# consumes it as a relative-path input with `inputs.nixpkgs.follows` — so the
-# lock file here is irrelevant to that parent and deliberately not committed.
-# The layout is already the standalone one: when the project graduates to its
-# own repository, consumers only swap the input URL.
+# Consumers usually set `inputs.steamix.inputs.nixpkgs.follows = "nixpkgs"`,
+# so the lock file here pins only what this repository builds itself: the
+# VM tests, the cached packages and the docs.
 {
   description = "Steamix — a SteamOS-like Gaming Mode for NixOS";
 
@@ -56,8 +54,14 @@
           inherit (steamixPackages) steamos-manager decky-loader;
           inherit (steamixPackages.deckyPlugins) hltb-for-deck protondb-decky;
           docs-reference = nixpkgs.legacyPackages.${system}.callPackage ./packages/docs-reference.nix { };
+          # The documentation site, as published to GitHub Pages.
+          docs = nixpkgs.legacyPackages.${system}.callPackage ./packages/docs.nix {
+            docs-reference = self.packages.${system}.docs-reference;
+          };
         }
       );
+
+      formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
 
       # VM tests (see tests/default.nix). x86_64-linux only: Gaming Mode is
       # Steam, and Steam is x86_64.

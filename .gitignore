@@ -1,0 +1,12 @@
+# Build results
+result
+result-*
+
+# Generated from the module by packages/docs-reference.nix; the docs
+# package puts it in place when building the site.
+docs/reference/
+
+# mdBook's default output when previewing with `mdbook serve`
+book/
+
+.direnv/

@@ -1,15 +1,12 @@
 # Generated Steamix documentation: the option reference, built from the
-# option descriptions in modules/nixos exactly as the parent repo's
-# packages/docs/devix-reference.nix does for devix — so the two cannot drift from their modules the way hand-written
-# pages do.
+# option descriptions in modules/nixos, so it cannot drift from the module
+# the way a hand-written page does.
 #
-# One difference in technique: devix evaluates against a shim declaring the
-# handful of Home Manager options it writes to. Steamix writes to far too much
-# of NixOS for a shim to be honest (display managers, PAM, polkit, systemd,
-# sysctl, ...), so the module system's unmatched-definition check is switched
-# off instead. Only `options.steamix` is rendered either way, and the config
-# side is never forced, so nothing outside the option declarations has to
-# resolve.
+# Steamix writes to far too much of NixOS (display managers, PAM, polkit,
+# systemd, sysctl, ...) to evaluate against a shim declaring just those
+# options, so the module system's unmatched-definition check is switched off
+# instead. Only `options.steamix` is rendered, and the config side is never
+# forced, so nothing outside the option declarations has to resolve.
 {
   lib,
   pkgs,
@@ -17,8 +14,8 @@
   nixosOptionsDoc,
 }:
 let
-  repoRoot = toString ../.. + "/";
-  repoUrl = "https://github.com/arunoruto/flake/blob/main";
+  repoRoot = toString ./.. + "/";
+  repoUrl = "https://github.com/arunoruto/steamix/blob/main";
 
   evaluated = lib.evalModules {
     modules = [

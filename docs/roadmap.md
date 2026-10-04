@@ -73,8 +73,9 @@ Steamix has its own repository and builds against the channel heads.
 The audience this is for never writes Nix. The installer image should
 generate a template flake with a `settings.json`, commit it locally, and
 from then on the GUI (below) edits that file. Nobody opens a `.nix` file
-unless they want to. The per-host ISO machinery already exists in the parent
-repository; this is the standalone, user-facing version of it.
+unless they want to. Per-host installer images already exist in the
+author's [configuration repository](https://github.com/arunoruto/flake);
+this is the standalone, user-facing version of them.
 
 ## Modules worth adding
 
@@ -142,7 +143,7 @@ from the module and gives everyone else the fixes.
 
 ### VM tests
 
-Started (2026-10-04): the `greetd`, `sddm` and `decky-loader` tests boot the
+Started (2026-10-04): the `greetd`, `sddm`, `steamos-manager` and `decky-loader` tests boot the
 module in a VM and drive it end to end, against both nixpkgs channels, in CI.
 See [Testing](./testing.md). They found three bugs on their first runs that
 the host using the module never showed.
@@ -192,7 +193,8 @@ derive most of what is *present*.
 
 What nothing derives is the tuning in nixos-hardware's `common/` tree:
 amd-pstate, per-generation Intel media stacks, fstrim, laptop power. The
-parent repository solves that in `systems/hardware-profiles.nix`, which maps
+author's configuration repository solves that in
+[`systems/hardware-profiles.nix`](https://github.com/arunoruto/flake/blob/main/systems/hardware-profiles.nix), which maps
 CPU model and GPU driver from the report to profile directories. The obstacle
 it documents is real: those profiles carry nested `imports`, so the choice
 cannot depend on `config`, which is why "expose them as options" is the wrong

@@ -1,12 +1,13 @@
-# Steamix VM tests, run with the NixOS test driver. From steamix/:
+# Steamix VM tests, run with the NixOS test driver:
 #
 #   nix build -L .#checks.x86_64-linux.greetd
 #
-# From the repository root, pinned to the nixpkgs the parent flake locks
-# (what CI does; use nixpkgs-unstable for the other channel):
+# Against the NixOS release instead of the locked nixos-unstable (what CI's
+# stable channel does):
 #
-#   nix build -L --no-write-lock-file --inputs-from . \
-#     --override-input nixpkgs nixpkgs ./steamix#checks.x86_64-linux.greetd
+#   nix build -L --no-write-lock-file \
+#     --override-input nixpkgs github:nixos/nixpkgs/nixos-26.05 \
+#     .#checks.x86_64-linux.greetd
 #
 # Add `.driverInteractive` and run `result/bin/nixos-test-driver` to poke at
 # a test VM by hand.

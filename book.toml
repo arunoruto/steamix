@@ -1,0 +1,17 @@
+[book]
+title = "Steamix"
+authors = ["Mirza Arnaut"]
+language = "en"
+src = "docs"
+
+[build]
+create-missing = false
+
+[output.html]
+git-repository-url = "https://github.com/arunoruto/steamix"
+edit-url-template = "https://github.com/arunoruto/steamix/edit/main/docs/{path}"
+default-theme = "light"
+preferred-dark-theme = "navy"
+
+[output.html.search]
+enable = true

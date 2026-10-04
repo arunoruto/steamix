@@ -23,14 +23,13 @@ Type `null or str`, default `null`. The user the Gaming Mode session runs as.
 Required when `autoStart` is on — that user is logged in without a password
 prompt.
 
-In this repo the adapter defaults it to `users.primaryUser`.
-
 ### `steamix.autoStart`
 
 Type `bool`, default `true`. Boot straight into Gaming Mode by owning the
 login path with a greetd session loop. Cannot be combined with a regular
-display manager (greetd aliases `display-manager.service`); in this repo the
-adapter switches the `desktop` tag's display manager off automatically.
+display manager (greetd aliases `display-manager.service`), so turn off the
+one your desktop configuration enables, for example
+`services.displayManager.gdm.enable = false`.
 
 With `autoStart = false` the module only registers the "Steam" session: pick
 it from your own display manager's session chooser; session *switching* (which
@@ -179,10 +178,11 @@ layer speaks a versioned protocol to gamescope, so override these to keep it in
 step with a non-default `programs.gamescope.package`:
 
 ```nix
-programs.gamescope.package = pkgs.unstable.gamescope;
+# `newer` being a newer nixpkgs, for example an unstable input
+programs.gamescope.package = newer.gamescope;
 steamix.gamescope.wsi = {
-  package = pkgs.unstable.gamescope-wsi;
-  package32 = pkgs.unstable.pkgsi686Linux.gamescope-wsi;
+  package = newer.gamescope-wsi;
+  package32 = newer.pkgsi686Linux.gamescope-wsi;
 };
 ```
 
@@ -243,10 +243,10 @@ plugin menu into Steam's Gaming Mode UI.
 **nixpkgs does not package Decky Loader.** `package` therefore defaults to
 `pkgs.decky-loader` only when something has provided it, and to `null`
 otherwise — in which case the module configures nothing and emits a warning
-rather than failing to evaluate. That keeps this tree usable against a bare
-nixpkgs, which is the same constraint the rest of it follows. This repo builds
-one in `packages/top-level/decky-loader`, so `pkgs.decky-loader` resolves here;
-elsewhere, supply your own:
+rather than failing to evaluate. That keeps the module usable against a bare
+nixpkgs, which is the same constraint the rest of it follows. Steamix builds
+one in `packages/decky-loader`, and its `overlays.default` provides it as
+`pkgs.decky-loader`; without the overlay, supply your own:
 
 ```nix
 steamix.decky-loader = {
@@ -327,9 +327,10 @@ so on hardware that is not a Steam Deck most of it simply does not appear.
 | `.enable` | `bool` | `false` | Run the daemon. |
 | `.package` | `null or package` | `pkgs.steamos-manager or null` | What to run. |
 
-Like Decky's, the package is not in nixpkgs; this repo builds one in
-`packages/top-level/steamos-manager`, and elsewhere the option resolves to
-`null` and the module stays inert with a warning.
+Like Decky's, the package is not in nixpkgs; Steamix builds one in
+`packages/steamos-manager` and provides it through `overlays.default`.
+Without the overlay the option resolves to `null` and the module stays inert
+with a warning.
 
 ### Why it is off by default
 

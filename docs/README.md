@@ -7,58 +7,42 @@ desktop session — with an icon there to return to Gaming Mode, just like
 SteamOS.
 
 It is deliberately *not* [Jovian-NixOS](https://github.com/Jovian-Experiments/Jovian-NixOS).
-Jovian ships Valve's full stack (steamos-manager, powerbuttond, vendor
-gamescope-session, Deck hardware support) and is the right choice for an
-actual Steam Deck. This module instead reimplements the small part of that
-stack a PC actually needs — a gamescope session modelled on Valve's, a session
-switcher, and a `greetd` login loop — and is aimed at ordinary PCs used as
-living-room machines. Nothing here is fetched from Valve: the session is a
-~40-line script built from upstream nixpkgs' gamescope and Steam.
+Jovian ships Valve's full stack (powerbuttond, the vendor gamescope-session,
+Deck hardware support) and is the right choice for an actual Steam Deck.
+Steamix instead builds the parts a PC needs: a gamescope session modelled on
+Valve's, a session switcher, and a login loop on greetd or SDDM. It is aimed
+at ordinary PCs used as living-room machines, and leans on upstream nixpkgs'
+gamescope and Steam rather than Valve's patched builds.
 
-## Its own flake
+## Design
 
-This tree is mechanism only, and it is already structured as the standalone
-project it will eventually become: a flake at `steamix/` in the parent
-repository, exposing `nixosModules.default`, `overlays.default` (which
-provides `pkgs.steamos-manager`, `pkgs.decky-loader` and `pkgs.deckyPlugins`)
-and its packages. The parent consumes it as a relative-path input with
-`inputs.nixpkgs.follows`, so graduating to its own repository is a URL change
-for consumers.
+Steamix is mechanism only:
 
-- the module only touches plain `pkgs`, plain `lib`, and upstream NixOS
-  options — no parent-repo overlays (`pkgs.unstable`), no extended `lib`, no
-  tag system;
+- the module touches plain `pkgs`, plain `lib` and upstream NixOS options,
+  so it evaluates against a bare nixpkgs;
 - all policy (which host, which user, which desktop session) stays with the
-  consumer. In the parent repo that is the adapter
-  `modules/nixos/programs/gaming/Steamix`, which defaults
-  `steamix.user` to `users.primaryUser` and turns the display manager off
-  when the module owns the login path.
+  consumer's configuration;
+- the packages nixpkgs does not have (SteamOS Manager, Decky Loader and the
+  `deckyPlugins` scope) come from the flake's `overlays.default`, and the
+  module's package options find them there.
 
 ## Usage
 
-In this repo (see `systems/x86_64-linux/yhwach/` for the worked example):
+Add the flake and import the module and its overlay:
 
 ```nix
 {
-  system.tags = [ "desktop" "gaming" ]; # desktop stack + steam defaults
-
-  steamix = {
-    enable = true;
-    desktopSession = "gnome"; # any installed wayland session name
+  inputs.steamix = {
+    url = "github:arunoruto/steamix";
+    inputs.nixpkgs.follows = "nixpkgs";
   };
-}
-```
-
-From another flake:
-
-```nix
-{
-  inputs.mar-flake.url = "github:arunoruto/flake";
 
   # in a NixOS configuration:
-  imports = [ inputs.mar-flake.nixosModules.steamix ];
+  imports = [ inputs.steamix.nixosModules.default ];
 
   config = {
+    nixpkgs.overlays = [ inputs.steamix.overlays.default ];
+
     steamix = {
       enable = true;
       user = "alice";

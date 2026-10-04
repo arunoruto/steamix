@@ -2,12 +2,9 @@
 # Steam's Gaming Mode (gamescope) with an optional Desktop Mode to switch to,
 # without pulling in the full Jovian/steamos-manager stack.
 #
-# This tree is written to be reusable outside this flake (and eventually split
-# into its own repository): it only uses plain `pkgs`, plain `lib`, and
-# upstream NixOS options — no repo overlays (`pkgs.unstable`), no extended
-# `lib`, no tag system. Policy (which host enables it, which user, which
-# desktop session) lives with the consumer; see modules/nixos/programs/gaming/
-# for this flake's adapter.
+# Mechanism only: it uses plain `pkgs`, plain `lib` and upstream NixOS
+# options, and leaves policy (which host enables it, which user, which
+# desktop session) to the consumer's configuration.
 #
 # Documentation: ../../docs (README, how-it-works, options).
 {

@@ -1,0 +1,57 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  format:
+    name: format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: nixfmt
+        run: nix fmt -- --ci
+
+  vm-test:
+    name: ${{ matrix.test }} (${{ matrix.channel.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      # One failing test or channel must not hide the others: the two
+      # channels have already disagreed about greetd's PAM stack.
+      fail-fast: false
+      matrix:
+        test: [greetd, sddm, steamos-manager, decky-loader]
+        # unstable: nixos-unstable at the revision flake.lock pins.
+        # stable: the current nixos-26.05 channel head, so a release-branch
+        #   change that breaks Steamix shows up without waiting for a lock
+        #   bump.
+        channel:
+          - { name: unstable, args: "" }
+          - { name: stable, args: "--no-write-lock-file --override-input nixpkgs github:nixos/nixpkgs/nixos-26.05" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          # Hands the runner's /dev/kvm to the Nix daemon; without it the
+          # test driver falls back to emulation and takes many times longer.
+          kvm: true
+      - name: Pull from the Steamix cache
+        uses: cachix/cachix-action@v17
+        with:
+          name: steamix
+          # Tests never push; the cache workflow does, after they pass.
+          skipPush: true
+      - name: Run ${{ matrix.test }} against ${{ matrix.channel.name }}
+        run: nix build -L ${{ matrix.channel.args }} .#checks.x86_64-linux.${{ matrix.test }}
+
+  cache:
+    name: cache
+    needs: [format, vm-test]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/cache.yaml
+    secrets: inherit

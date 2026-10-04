@@ -21,21 +21,14 @@ The tests are the Steamix flake's own `checks`. From `steamix/`, against its
 nix build -L .#checks.x86_64-linux.greetd
 ```
 
-From the repository root, pinned to a nixpkgs the parent flake locks, which
-is what CI does. `--inputs-from .` makes the parent's locked inputs
-resolvable by name, so the override needs no revision:
+Against the current NixOS 26.05 release instead, which is what CI does for
+the stable channel:
 
 ```sh
-nix build -L --no-write-lock-file --inputs-from . \
-  --override-input nixpkgs nixpkgs ./steamix#checks.x86_64-linux.greetd
-
-# the channel Steamix's own flake follows
-nix build -L --no-write-lock-file --inputs-from . \
-  --override-input nixpkgs nixpkgs-unstable ./steamix#checks.x86_64-linux.greetd
+nix build -L --no-write-lock-file \
+  --override-input nixpkgs github:nixos/nixpkgs/nixos-26.05 \
+  .#checks.x86_64-linux.greetd
 ```
-
-Nothing about the tests lives in the parent flake. When Steamix moves to its
-own repository it commits its own lock file and the override goes away.
 
 All of them need `/dev/kvm`; without it the driver falls back to emulation
 and is many times slower. A test VM boots in about 15 seconds and each test
@@ -47,18 +40,16 @@ driver; `start_all()` boots the VMs and every `machine.*` call from the test
 script works at the prompt:
 
 ```sh
-nix build ./steamix#checks.x86_64-linux.greetd.driverInteractive --no-write-lock-file
+nix build .#checks.x86_64-linux.greetd.driverInteractive
 ./result/bin/nixos-test-driver
 ```
 
-The Steamix workflow runs every test against both channels, and only for
-pushes that change something under `steamix/`, so unrelated work in the
-repository never runs it; it can also be started by hand. A nixpkgs bump that
-breaks Steamix therefore shows up on the next Steamix change or manual run.
-The workflow's canonical copy is `steamix/.github/workflows/steamix.yaml`.
-GitHub only loads regular files from the repository's root
-`.github/workflows` and does not follow symlinks there, so the root file is a
-byte-for-byte copy, and the workflow's first step fails if the two differ.
+The CI workflow runs every test against both channels on every push to
+`main` and every pull request: unstable at the revision `flake.lock` pins,
+and stable at the current `nixos-26.05` channel head, so a release-branch
+change that breaks Steamix shows up without waiting for a lock bump. The
+weekly lock update runs all tests against the new lock and only commits it
+when they pass.
 
 ## What is real and what is not
 

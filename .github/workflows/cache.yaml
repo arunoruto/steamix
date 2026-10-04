@@ -1,0 +1,63 @@
+# Fill steamix.cachix.org with what a Steamix machine would otherwise compile
+# itself: the flake's `cache` set (SteamOS Manager, Decky Loader, the 32-bit
+# gamescope WSI layer).
+#
+# A cache only serves the exact store path a machine asks for, and that path
+# depends on the whole nixpkgs revision. So the set is built against the
+# revision flake.lock pins and against the current heads of the two channels
+# consumers follow, and rebuilt daily, so a machine whose own lock was bumped
+# recently asks for paths that are already there. Unchanged builds are
+# substituted from the cache itself, so a day with nothing new costs little.
+name: Cache
+on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 5 * * *"
+
+jobs:
+  cache:
+    name: cache (${{ matrix.channel.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        channel:
+          - { name: locked, args: "" }
+          - { name: unstable, args: "--no-write-lock-file --override-input nixpkgs github:nixos/nixpkgs/nixos-unstable" }
+          - { name: stable, args: "--no-write-lock-file --override-input nixpkgs github:nixos/nixpkgs/nixos-26.05" }
+    env:
+      # A repository secret holding a Cachix auth token with write access to
+      # the steamix cache. Without it the job builds and skips the push.
+      CACHIX_AUTH_TOKEN: ${{ secrets.STEAMIX_CACHIX_AUTH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Set up Cachix
+        uses: cachix/cachix-action@v17
+        with:
+          name: steamix
+          authToken: ${{ secrets.STEAMIX_CACHIX_AUTH_TOKEN }}
+          # Pushed explicitly below, so build-only paths (fetched sources,
+          # Decky's pnpm dependencies) stay out of the cache.
+          skipPush: true
+      - name: Build the cached set against ${{ matrix.channel.name }}
+        run: |
+          : > outputs
+          for attr in $(nix eval --raw ${{ matrix.channel.args }} .#cache --apply 'c: toString (builtins.attrNames c)'); do
+            path=$(nix build -L --no-link --print-out-paths ${{ matrix.channel.args }} ".#cache.$attr")
+            echo "$attr $path" | tee -a outputs
+          done
+      - name: Push and pin
+        if: env.CACHIX_AUTH_TOKEN != ''
+        run: |
+          # Pinned so the free tier's garbage collection keeps what machines
+          # use; three revisions per package and channel.
+          while read -r attr path; do
+            cachix push steamix "$path"
+            cachix pin steamix "$attr-${{ matrix.channel.name }}" "$path" --keep-revisions 3
+          done < outputs
+      - name: No token, nothing pushed
+        if: env.CACHIX_AUTH_TOKEN == ''
+        run: echo "::notice::STEAMIX_CACHIX_AUTH_TOKEN is not set; built the cached set but pushed nothing."

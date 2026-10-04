@@ -15,22 +15,22 @@
   </p>
 
   <p>
-    <a href="https://github.com/arunoruto/flake/actions/workflows/steamix.yaml"><img src="https://github.com/arunoruto/flake/actions/workflows/steamix.yaml/badge.svg?branch=main" alt="VM tests"></a>
+    <a href="https://github.com/arunoruto/steamix/actions/workflows/ci.yaml"><img src="https://github.com/arunoruto/steamix/actions/workflows/ci.yaml/badge.svg?branch=main" alt="CI"></a>
     <a href="https://steamix.cachix.org"><img src="https://img.shields.io/badge/cachix-steamix-5277c3?logo=nixos&logoColor=white" alt="Cachix: steamix"></a>
     <img src="https://img.shields.io/badge/NixOS-26.05%20%7C%20unstable-7ebae4?logo=nixos&logoColor=white" alt="NixOS 26.05 and unstable">
-    <a href="../LICENSE"><img src="https://img.shields.io/badge/license-MIT-7c5cff" alt="MIT license"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-7c5cff" alt="MIT license"></a>
   </p>
 
   <p>
-    <a href="https://arunoruto.github.io/flake/steamix/"><strong>Explore the docs »</strong></a>
+    <a href="https://arunoruto.github.io/steamix/"><strong>Explore the docs »</strong></a>
     <br><br>
-    <a href="https://arunoruto.github.io/flake/steamix/how-it-works.html">How it works</a>
+    <a href="https://arunoruto.github.io/steamix/how-it-works.html">How it works</a>
     ·
-    <a href="https://arunoruto.github.io/flake/steamix/options.html">Options</a>
+    <a href="https://arunoruto.github.io/steamix/options.html">Options</a>
     ·
-    <a href="https://arunoruto.github.io/flake/steamix/roadmap.html">Roadmap</a>
+    <a href="https://arunoruto.github.io/steamix/roadmap.html">Roadmap</a>
     ·
-    <a href="https://github.com/arunoruto/flake/issues">Report a bug</a>
+    <a href="https://github.com/arunoruto/steamix/issues">Report a bug</a>
   </p>
 </div>
 
@@ -121,7 +121,7 @@ that breaks something is one boot-menu entry away from being undone.
 
    ```nix
    inputs.steamix = {
-     url = "github:arunoruto/flake?dir=steamix";
+     url = "github:arunoruto/steamix";
      inputs.nixpkgs.follows = "nixpkgs";
    };
    ```
@@ -179,9 +179,9 @@ steamix.gamescope.args = [ "--prefer-vk-device" "1002:7590" ];
 ```
 
 HDR, VRR and the performance overlay need no configuration. For everything
-else, see the [options tour](https://arunoruto.github.io/flake/steamix/options.html),
-the generated [option reference](https://arunoruto.github.io/flake/steamix/reference/options.html),
-and [hardware setup & tuning](https://arunoruto.github.io/flake/steamix/hardware-and-tuning.html).
+else, see the [options tour](https://arunoruto.github.io/steamix/options.html),
+the generated [option reference](https://arunoruto.github.io/steamix/reference/options.html),
+and [hardware setup & tuning](https://arunoruto.github.io/steamix/hardware-and-tuning.html).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -199,44 +199,37 @@ and [hardware setup & tuning](https://arunoruto.github.io/flake/steamix/hardware
 - [ ] A settings GUI for people who would rather not edit Nix
 - [ ] ARM devices
 
-The [full roadmap](https://arunoruto.github.io/flake/steamix/roadmap.html)
+The [full roadmap](https://arunoruto.github.io/steamix/roadmap.html)
 explains each item and the order they come in.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Contributing
 
-Steamix is incubating inside [arunoruto/flake](https://github.com/arunoruto/flake)
-until it is stable, so issues and pull requests go there. The layout is
-already the standalone one, so moving it to its own repository will only
-change the input URL.
-
-Before sending a change, run the VM tests, from the repository root:
+Issues and pull requests are welcome. Before sending a change, run the VM
+tests:
 
 ```sh
-nix build -L --no-write-lock-file --inputs-from . \
-  --override-input nixpkgs nixpkgs ./steamix#checks.x86_64-linux.greetd
+nix build -L .#checks.x86_64-linux.greetd
 ```
 
 The tests are `greetd`, `sddm`, `steamos-manager` and `decky-loader`; the
-[testing guide](https://arunoruto.github.io/flake/steamix/testing.html)
-covers what each checks and how to run one interactively. Format with
-`nix fmt`.
+[testing guide](https://arunoruto.github.io/steamix/testing.html) covers what
+each checks, how to run them against the NixOS release, and how to poke at a
+test machine interactively. Format with `nix fmt`.
 
 | Path | What |
 |------|------|
 | `modules/nixos/` | The NixOS module, exported as `nixosModules.default` |
 | `packages/` | SteamOS Manager, Decky Loader and the `deckyPlugins` scope, exported as `overlays.default` |
 | `tests/` | NixOS VM tests, exported as `checks.x86_64-linux.*` |
-| `.github/workflows/` | CI, canonical copy; the repository root carries a checked byte-for-byte copy, since GitHub ignores symlinked workflows |
-| `docs/` | The documentation, rendered as part of the parent repository's book for now |
+| `docs/` | The documentation site, built as `packages.*.docs` and published to GitHub Pages |
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## License
 
-Distributed under the MIT License, the license of the repository Steamix
-currently lives in. See [LICENSE](../LICENSE).
+Distributed under the MIT License. See [LICENSE](LICENSE).
 
 The logo's snowflake is derived from the
 [NixOS logo](https://github.com/NixOS/nixos-artwork/tree/master/logo) by

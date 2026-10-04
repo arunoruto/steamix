@@ -1,0 +1,77 @@
+# Bump flake.lock weekly, and commit the new lock only when every VM test
+# passes with it. The commit is pushed with GITHUB_TOKEN, which does not start
+# other workflows; the daily cache run picks the new revision up.
+name: Update flake.lock
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 4 * * 1"
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    name: update
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - run: nix flake update
+      - id: diff
+        run: |
+          if git diff --quiet -- flake.lock; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff -- flake.lock
+          fi
+      - if: steps.diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: flake-lock
+          path: flake.lock
+
+  vm-test:
+    name: ${{ matrix.test }} (new lock)
+    needs: update
+    if: needs.update.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        test: [greetd, sddm, steamos-manager, decky-loader]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: flake-lock
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          kvm: true
+      - uses: cachix/cachix-action@v17
+        with:
+          name: steamix
+          skipPush: true
+      - run: nix build -L .#checks.x86_64-linux.${{ matrix.test }}
+
+  commit:
+    name: commit
+    needs: [update, vm-test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: flake-lock
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add flake.lock
+          git commit -m "chore: update flake.lock"
+          git push
