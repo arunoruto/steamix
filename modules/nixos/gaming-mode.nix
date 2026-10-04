@@ -381,6 +381,12 @@ let
       fi
     ''}
 
+    ${lib.optionalString (cfg.session.preStart != "") ''
+      # Work that needs Steam closed (steamix.session.preStart): this is the
+      # last moment before Steam starts, on every login, on every path.
+      ${cfg.session.preStart}
+    ''}
+
     # Steam opens a file descriptor per shader cache entry, among other things.
     ulimit -n 524288 || true
 
@@ -419,6 +425,18 @@ let
       });
 in
 {
+  options.steamix.session.preStart = lib.mkOption {
+    type = lib.types.lines;
+    default = "";
+    internal = true;
+    description = ''
+      Shell commands the Gaming Mode session runs right before it starts
+      gamescope and Steam, as the session user. For work that needs Steam
+      closed, such as writing its library files. A failing command must not
+      stop the session, so each user is expected to guard its own commands.
+    '';
+  };
+
   config = lib.mkIf cfg.enable {
     programs.steam = {
       enable = lib.mkDefault true;

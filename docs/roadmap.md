@@ -123,8 +123,12 @@ user-added ones alone gives `steamix.launchers.heroic.enable` that feels
 native. Emulation is where Nix shines: `retroarch.withCores` plus declared
 BIOS and ROM paths is EmuDeck without the installer script.
 
-Started (2026-10-04): `steamix.heroic.enable` installs Heroic, so it is there
-in Desktop Mode. Library entries are the remaining part.
+Started (2026-10-04): `steamix.heroic.enable` installs Heroic, and
+`steamix.library.boilr` puts the games Heroic, Lutris, itch.io and other
+launchers installed into Steam's library on every login, through
+[BoilR](https://github.com/PhilipK/BoilR). Emulators are the remaining part,
+where [Steam ROM Manager](https://github.com/SteamGridDB/steam-rom-manager)
+fits the same hook: it also needs Steam closed and has a command-line mode.
 
 ### Streaming and scheduler
 

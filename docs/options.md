@@ -245,6 +245,43 @@ nixpkgs' `heroic` runs the launcher in an FHS environment with the libraries
 its games and Wine builds expect; `pkgs.heroic.override { extraPkgs = pkgs:
 [ ... ]; }` adds more.
 
+## `steamix.library.boilr`
+
+[BoilR](https://github.com/PhilipK/BoilR) puts games from other launchers in
+Steam's library, so Gaming Mode can start them: Heroic (Epic and GOG),
+Legendary, Lutris, itch.io, Bottles, Flatpaks, MiniGalaxy and more. It runs
+on every login, inside the Gaming Mode session right before Steam starts,
+because it needs Steam closed. A game installed in Desktop Mode appears the
+next time Gaming Mode starts.
+
+| Option | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `.enable` | `bool` | `false` | Sync on every login. |
+| `.package` | `package` | `pkgs.boilr` | What to run. |
+| `.settings` | TOML attrs | `{ }` | BoilR's configuration, written to `~/.config/boilr/config.toml` on every login. |
+| `.steamGridDbKeyFile` | `null or str` | `null` | A file with a SteamGridDB API key, read at login, for artwork. |
+| `.timeout` | positive int | `120` | Seconds a sync may take before Steam starts anyway. |
+
+```nix
+steamix.library.boilr = {
+  enable = true;
+  steamGridDbKeyFile = "/run/secrets/steamgriddb"; # e.g. from sops-nix
+  settings.steam.create_collections = true;
+};
+```
+
+Repeating the sync is safe: BoilR removes only the shortcuts it added
+itself, and shortcuts you added by hand stay. Heroic's games launch through
+Heroic by default, which keeps Epic sign-in and cloud saves working.
+
+`settings` is the source of truth. Anything left out keeps BoilR's default,
+which detects most launchers by itself; Steamix only sets
+`steam.optimize_for_big_picture = true` and enables SteamGridDB when a key
+file is given. Changes made in BoilR's own window do not survive the next
+login. The key never enters the Nix store: the config is written with a
+placeholder and the key is filled in at login, into a file only the user can
+read.
+
 ## `steamix.decky-loader`
 
 [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) injects a

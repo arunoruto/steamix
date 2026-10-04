@@ -26,6 +26,7 @@ in
   sddm = runTest ./sddm.nix;
   steamos-manager = runTest ./steamos-manager.nix;
   decky-loader = runTest ./decky-loader.nix;
+  library = runTest ./library.nix;
 
   # Evaluation only: options too simple to need a VM.
   options = import ./options.nix { inherit pkgs testLib; };

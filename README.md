@@ -82,6 +82,8 @@ that breaks something is one boot-menu entry away from being undone.
 - **Decky Loader with one option**, plugins declared in Nix or installed from
   the in-game store, side by side.
 - **Heroic Games Launcher with one option**, for Epic, GOG and Amazon games.
+- **Games from other launchers in Steam's library**: BoilR adds what Heroic,
+  Lutris, itch.io and others installed, with artwork, on every login.
 - **SteamOS Manager** for the controls Steam reaches through it, including
   TDP, GPU and performance profiles on the handhelds it recognises.
 - **A binary cache** for everything nixpkgs does not build, so installs
@@ -166,10 +168,12 @@ steamix.decky-loader = {
 };
 ```
 
-Heroic Games Launcher, for Epic, GOG and Amazon games:
+Heroic Games Launcher, with its games in Steam's library so Gaming Mode can
+start them:
 
 ```nix
 steamix.heroic.enable = true;
+steamix.library.boilr.enable = true;
 ```
 
 The SteamOS-shaped login path, where Steam switches sessions through SteamOS
@@ -202,7 +206,8 @@ and [hardware setup & tuning](https://arunoruto.github.io/steamix/hardware-and-t
 - [ ] GPU selection from the nixos-facter hardware report
 - [ ] Mods as Steam compatibility tools, starting with ModEngine3
 - [x] Heroic Games Launcher as an option
-- [ ] Heroic games and emulators as entries in the Steam library
+- [x] Games from other launchers in the Steam library, with BoilR
+- [ ] Emulators and ROMs in the Steam library
 - [ ] Handheld support with Handheld Daemon
 - [ ] A settings GUI for people who would rather not edit Nix
 - [ ] ARM devices
@@ -221,7 +226,8 @@ tests:
 nix build -L .#checks.x86_64-linux.greetd
 ```
 
-The VM tests are `greetd`, `sddm`, `steamos-manager` and `decky-loader`, and
+The VM tests are `greetd`, `sddm`, `steamos-manager`, `decky-loader` and
+`library`, and
 `options` checks simple options by evaluation alone; the
 [testing guide](https://arunoruto.github.io/steamix/testing.html) covers what
 each checks, how to run them against the NixOS release, and how to poke at a
