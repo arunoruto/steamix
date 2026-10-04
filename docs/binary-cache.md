@@ -9,9 +9,11 @@ downloads what it would otherwise compile:
 | SteamOS Manager | not in nixpkgs |
 | Decky Loader | not in nixpkgs |
 | 32-bit gamescope WSI layer | in nixpkgs, but Hydra does not build it; the module installs it by default (`steamix.gamescope.wsi.package32`) |
+| `linux-armada` (aarch64) | the [handheld](./handhelds.md) kernel, not in nixpkgs; built natively on GitHub's ARM runners, so an x86_64 machine building a handheld image does not compile it under emulation |
 
 The Decky plugins are not cached: they are release downloads, so a cache
-would save nothing.
+would save nothing. Nor is the handheld firmware (`armada-firmware`): it has
+no licence that allows redistributing it.
 
 ## Using it
 

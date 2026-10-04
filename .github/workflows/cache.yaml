@@ -1,6 +1,7 @@
 # Fill steamix.cachix.org with what a Steamix machine would otherwise compile
-# itself: the flake's `cache` set (SteamOS Manager, Decky Loader, the 32-bit
-# gamescope WSI layer).
+# itself: the flake's `cache` set for each system (on x86_64 SteamOS Manager,
+# Decky Loader, the 32-bit gamescope WSI layer; on aarch64 the handheld
+# kernel, built natively on GitHub's ARM runners).
 #
 # A cache only serves the exact store path a machine asks for, and that path
 # depends on the whole nixpkgs revision. So the set is built against the
@@ -17,12 +18,17 @@ on:
 
 jobs:
   cache:
-    name: cache (${{ matrix.channel.name }})
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    name: cache (${{ matrix.system.name }}, ${{ matrix.channel.name }})
+    runs-on: ${{ matrix.system.runner }}
+    timeout-minutes: ${{ matrix.system.timeout }}
     strategy:
       fail-fast: false
       matrix:
+        # `.#cache` is the runner's own system's set.
+        system:
+          - { name: x86_64-linux, runner: ubuntu-latest, timeout: 45 }
+          # A kernel takes a while on four cores.
+          - { name: aarch64-linux, runner: ubuntu-24.04-arm, timeout: 240 }
         channel:
           - { name: locked, args: "" }
           - { name: unstable, args: "--no-write-lock-file --override-input nixpkgs github:nixos/nixpkgs/nixos-unstable" }
@@ -53,7 +59,8 @@ jobs:
         if: env.CACHIX_AUTH_TOKEN != ''
         run: |
           # Pinned so the free tier's garbage collection keeps what machines
-          # use; three revisions per package and channel.
+          # use; three revisions per package and channel. (Package names do not
+          # repeat across systems, so they need no system in the pin name.)
           while read -r attr path; do
             cachix push steamix "$path"
             cachix pin steamix "$attr-${{ matrix.channel.name }}" "$path" --keep-revisions 3

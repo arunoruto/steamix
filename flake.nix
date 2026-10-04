@@ -35,9 +35,23 @@
       eachSystem = nixpkgs.lib.genAttrs systems;
     in
     {
+      # Steamix itself, and handheld hardware support (hardware/): one
+      # module per device, `<vendor>-<model>`, plus the shared pieces.
       nixosModules = {
         default = ./modules/nixos;
         steamix = ./modules/nixos;
+      }
+      // import ./hardware { inherit (nixpkgs) lib; };
+
+      # Bring-up images for the handhelds: a console system to flash to an SD
+      # card and boot through ROCKNIX ABL. Build with
+      # `nix build .#packages.aarch64-linux.sd-image-<device>`.
+      nixosConfigurations.retroid-pocket-6 = nixpkgs.lib.nixosSystem {
+        modules = [
+          self.nixosModules.retroid-pocket-6
+          self.nixosModules.rocknix-abl-sd-image
+          ./hardware/common/bring-up.nix
+        ];
       };
 
       # Adds steamos-manager, decky-loader and the deckyPlugins scope to pkgs —
@@ -51,13 +65,41 @@
           steamixPackages = import ./packages { pkgs = nixpkgs.legacyPackages.${system}; };
         in
         {
-          inherit (steamixPackages) steamos-manager decky-loader;
-          inherit (steamixPackages.deckyPlugins) hltb-for-deck protondb-decky decky-lsfg-vk;
+          inherit (steamixPackages) steamos-manager decky-loader rocknix-abl;
+          # decky-lsfg-vk is unfree, which `nix flake check` refuses in
+          # `packages`; it is in legacyPackages.<system>.deckyPlugins.
+          inherit (steamixPackages.deckyPlugins) hltb-for-deck protondb-decky;
           docs-reference = nixpkgs.legacyPackages.${system}.callPackage ./packages/docs-reference.nix { };
           # The documentation site, as published to GitHub Pages.
           docs = nixpkgs.legacyPackages.${system}.callPackage ./packages/docs.nix {
             docs-reference = self.packages.${system}.docs-reference;
           };
+        }
+        # The handheld kernel and bring-up images, built natively.
+        # (armada-firmware is left out: it is unfree, and comes with the
+        # hardware modules.)
+        // nixpkgs.lib.optionalAttrs (system == "aarch64-linux") {
+          linux-armada = steamixPackages.linux_armada;
+          sd-image-retroid-pocket-6 = self.nixosConfigurations.retroid-pocket-6.config.system.build.sdImage;
+        }
+        # The same image for x86_64 machines, with the kernel cross-compiled
+        # (an hour, instead of many under emulation). The rest is still
+        # aarch64: from cache.nixos.org, or built under binfmt emulation.
+        // nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          sd-image-retroid-pocket-6 =
+            (self.nixosConfigurations.retroid-pocket-6.extendModules {
+              modules = [
+                (
+                  { pkgs, ... }:
+                  {
+                    boot.kernelPackages =
+                      pkgs.linuxPackagesFor
+                        (import ./packages { pkgs = nixpkgs.legacyPackages.x86_64-linux.pkgsCross.aarch64-multiplatform; })
+                        .linux_armada;
+                  }
+                )
+              ];
+            }).config.system.build.sdImage;
         }
       );
 
@@ -77,15 +119,30 @@
       # A cache only helps a machine that asks for the exact store path, so
       # CI builds this against the nixpkgs revisions it is pinned to; see
       # docs/binary-cache.md.
-      legacyPackages.x86_64-linux.cache =
+      legacyPackages = eachSystem (
+        system:
         let
-          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          pkgs = nixpkgs.legacyPackages.${system};
           steamixPackages = import ./packages { inherit pkgs; };
         in
         {
-          inherit (steamixPackages) steamos-manager decky-loader;
-          gamescope-wsi-32 = pkgs.pkgsi686Linux.gamescope-wsi;
-        };
+          # Every Decky plugin, unfree ones included:
+          # `NIXPKGS_ALLOW_UNFREE=1 nix build --impure .#deckyPlugins.decky-lsfg-vk`
+          inherit (steamixPackages) deckyPlugins;
+        }
+        // nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          cache = {
+            inherit (steamixPackages) steamos-manager decky-loader;
+            gamescope-wsi-32 = pkgs.pkgsi686Linux.gamescope-wsi;
+          };
+        }
+        # The handheld kernel: hours under emulation, so the one thing an
+        # x86_64 machine building a handheld image should not build itself.
+        # (Its firmware is unfree and stays out.)
+        // nixpkgs.lib.optionalAttrs (system == "aarch64-linux") {
+          cache.linux-armada = steamixPackages.linux_armada;
+        }
+      );
 
       # Room to grow, reserved rather than stubbed: Gaming Mode is a system
       # concern, but per-user pieces (Decky plugin settings, per-game

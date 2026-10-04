@@ -16,6 +16,18 @@ jobs:
       - name: nixfmt
         run: nix fmt -- --ci
 
+  # Every output of every system evaluates: aarch64 included (the handheld
+  # modules and images), which nothing else here builds.
+  eval:
+    name: flake check
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: nix flake check, evaluation only
+        run: nix flake check --no-build --all-systems
+
   vm-test:
     name: ${{ matrix.test }} (${{ matrix.channel.name }})
     runs-on: ubuntu-latest
@@ -25,7 +37,7 @@ jobs:
       # channels have already disagreed about greetd's PAM stack.
       fail-fast: false
       matrix:
-        test: [greetd, sddm, steamos-manager, decky-loader, library, options, decky-lsfg-vk]
+        test: [greetd, sddm, steamos-manager, decky-loader, library, options, decky-lsfg-vk, rocknix-abl, linux-armada-config]
         # unstable: nixos-unstable at the revision flake.lock pins.
         # stable: the current nixos-26.05 channel head, so a release-branch
         #   change that breaks Steamix shows up without waiting for a lock
@@ -51,7 +63,7 @@ jobs:
 
   cache:
     name: cache
-    needs: [format, vm-test]
+    needs: [format, eval, vm-test]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     uses: ./.github/workflows/cache.yaml
     secrets: inherit

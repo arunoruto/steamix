@@ -31,6 +31,15 @@ in
   # Evaluation only: options too simple to need a VM.
   options = import ./options.nix { inherit pkgs testLib; };
 
+  # Handheld support (hardware/), on x86_64 too: the ROCKNIX ABL boot image
+  # writer, and the handheld kernel's config, cross-compiled (generating
+  # the config applies Armada's whole patch series, so this also catches a
+  # patch that stops applying).
+  rocknix-abl = import ./rocknix-abl.nix { inherit pkgs; };
+  linux-armada-config =
+    (import ../packages { pkgs = pkgs.pkgsCross.aarch64-multiplatform; })
+    .linux_armada.tests.armada-config;
+
   # The Decky LSFG-VK plugin's backend on NixOS. The plugin carries lsfg-vk's
   # non-free build, so it is built from a nixpkgs that allows that one.
   decky-lsfg-vk = import ./decky-lsfg-vk.nix {

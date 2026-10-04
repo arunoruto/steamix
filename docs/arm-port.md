@@ -43,8 +43,8 @@ it does is known from how both distributions use it:
 Two layers, kept apart so each can go upstream on its own:
 
 - **Device support** (kernel, device tree, firmware, boot image, SD image):
-  not Steamix-specific. Its own flake to start with, aimed at nixos-hardware
-  later.
+  not Steamix-specific. In Steamix's `hardware/` to start with (see
+  [Handhelds](./handhelds.md)), aimed at nixos-hardware later.
 - **Steam on ARM** (Valve's ARM64 client, FEX for x86 games, the Gaming Mode
   session on aarch64): Steamix, with the generic parts (FEX module, client
   package) aimed at nixpkgs.
@@ -58,6 +58,11 @@ runners have no KVM, so aarch64 CI evaluates and builds but does not boot VM
 tests; the device itself is the test bench.
 
 ## Phase 0: before the device arrives
+
+Done (2026-10-05), see [Handhelds](./handhelds.md): the kernel, the boot
+image writer, the SD image and the firmware are in `hardware/` and
+`packages/`, with the kernel config and the boot image checked in CI. Left:
+comparing with a real Armada `/KERNEL`, and booting it.
 
 1. **Kernel.** `buildLinux` with Linux 7.2.6 and Armada's patch series
    (209 patches: the RP6 panel driver, RSInput gamepad, LEDs, touchscreen,
