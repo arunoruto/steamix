@@ -226,6 +226,25 @@ rules for every controller Steam supports. A blanket
 the machine, which is more than Valve grants on a Deck. If you have a pad that
 Valve's list misses, add a rule for that device.
 
+## `steamix.heroic`
+
+[Heroic Games Launcher](https://heroicgameslauncher.com) for Epic, GOG and
+Amazon Prime Gaming libraries.
+
+| Option | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `.enable` | `bool` | `false` | Install Heroic. |
+| `.package` | `package` | `pkgs.heroic` | What to install. |
+
+This installs Heroic as a normal application, so it is there in Desktop
+Mode. Gaming Mode only shows what is in Steam's library: use Heroic's own
+per-game "Add to Steam" action, or add Heroic itself as a non-Steam game.
+Adding library entries declaratively is on the [roadmap](./roadmap.md).
+
+nixpkgs' `heroic` runs the launcher in an FHS environment with the libraries
+its games and Wine builds expect; `pkgs.heroic.override { extraPkgs = pkgs:
+[ ... ]; }` adds more.
+
 ## `steamix.decky-loader`
 
 [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) injects a

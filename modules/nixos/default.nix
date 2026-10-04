@@ -19,6 +19,7 @@ in
 {
   imports = [
     ./decky-loader.nix
+    ./heroic.nix
     ./manager.nix
     ./gaming-mode.nix
     ./tweaks.nix

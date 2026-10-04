@@ -81,6 +81,7 @@ that breaks something is one boot-menu entry away from being undone.
   the connected display, SteamOS' memory and network tuning.
 - **Decky Loader with one option**, plugins declared in Nix or installed from
   the in-game store, side by side.
+- **Heroic Games Launcher with one option**, for Epic, GOG and Amazon games.
 - **SteamOS Manager** for the controls Steam reaches through it, including
   TDP, GPU and performance profiles on the handhelds it recognises.
 - **A binary cache** for everything nixpkgs does not build, so installs
@@ -165,6 +166,12 @@ steamix.decky-loader = {
 };
 ```
 
+Heroic Games Launcher, for Epic, GOG and Amazon games:
+
+```nix
+steamix.heroic.enable = true;
+```
+
 The SteamOS-shaped login path, where Steam switches sessions through SteamOS
 Manager:
 
@@ -194,7 +201,8 @@ and [hardware setup & tuning](https://arunoruto.github.io/steamix/hardware-and-t
 - [ ] OS updates from Gaming Mode's update button, with automatic rollback
 - [ ] GPU selection from the nixos-facter hardware report
 - [ ] Mods as Steam compatibility tools, starting with ModEngine3
-- [ ] Heroic and emulators as entries in the Steam library
+- [x] Heroic Games Launcher as an option
+- [ ] Heroic games and emulators as entries in the Steam library
 - [ ] Handheld support with Handheld Daemon
 - [ ] A settings GUI for people who would rather not edit Nix
 - [ ] ARM devices
@@ -213,7 +221,8 @@ tests:
 nix build -L .#checks.x86_64-linux.greetd
 ```
 
-The tests are `greetd`, `sddm`, `steamos-manager` and `decky-loader`; the
+The VM tests are `greetd`, `sddm`, `steamos-manager` and `decky-loader`, and
+`options` checks simple options by evaluation alone; the
 [testing guide](https://arunoruto.github.io/steamix/testing.html) covers what
 each checks, how to run them against the NixOS release, and how to poke at a
 test machine interactively. Format with `nix fmt`.
