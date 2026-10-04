@@ -6,6 +6,20 @@ through upstream nixpkgs options (`programs.steam.*`, `programs.gamescope.*`).
 This page is the curated tour; the [option reference](./reference/options.md)
 is the complete listing, generated from the module so it cannot drift.
 
+Every package Steamix installs has a `package` option (`steamix.heroic.package`,
+`steamix.losslessScaling.package`, `steamix.library.boilr.package`, ...), so
+any of them can come from another nixpkgs, an overlay or an override. Steam
+and gamescope themselves are set through the upstream
+`programs.steam.package` and `programs.gamescope.package`. For example, lsfg-vk
+2.x on a NixOS 26.05 machine:
+
+```nix
+steamix.losslessScaling = {
+  package = unstable.lsfg-vk;       # `unstable` being a nixos-unstable package set
+  ui.package = unstable.lsfg-vk-ui; # same major version as the layer
+};
+```
+
 ## Core
 
 ### `steamix.enable`
@@ -303,6 +317,7 @@ Game Versions & Betas. lsfg-vk finds the DLL in the usual Steam libraries;
 | `.allowHalfPrecision` | `bool` | `true` | FP16 frame generation, 2 to 3 times faster where supported (2.x). |
 | `.profiles` | attrs of profiles | `{ }` | Declarative profiles; see below. |
 | `.ui.enable` | `bool` | `false` | lsfg-vk's configuration UI, for editing profiles in Desktop Mode. |
+| `.ui.package` | `package` | `pkgs.lsfg-vk-ui` | Which UI; keep it on the layer's major version (Steamix warns otherwise). |
 
 **Declarative or interactive.** With `profiles` set, Steamix writes the
 whole config to `/etc/lsfg-vk/conf.toml` and points every session at it,

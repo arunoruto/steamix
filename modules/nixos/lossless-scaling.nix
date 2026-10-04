@@ -67,6 +67,8 @@ let
 
   configFile = toml.generate "lsfg-vk-conf.toml" (if isV2 then configV2 else configV1);
 
+  majorOf = p: lib.versions.major (lib.getVersion p);
+
   # Purely numeric entries are Steam App IDs, which only 2.x matches on.
   appIdEntries = lib.filter (e: builtins.match "[0-9]+" e != null) (
     lib.concatMap (p: p.activeIn) (lib.attrValues cfg.profiles)
@@ -196,10 +198,22 @@ in
       '';
     };
 
-    ui.enable = lib.mkEnableOption ''
-      lsfg-vk's configuration UI, for editing profiles from Desktop Mode
-      when `profiles` is empty
-    '';
+    ui = {
+      enable = lib.mkEnableOption ''
+        lsfg-vk's configuration UI, for editing profiles from Desktop Mode
+        when `profiles` is empty
+      '';
+
+      package = lib.mkPackageOption pkgs "lsfg-vk-ui" {
+        extraDescription = ''
+          The UI writes the config format of its own major version, so keep
+          it on the same major version as {option}`steamix.losslessScaling.package`;
+          Steamix warns when they differ. When overriding the layer, for
+          example to a newer nixpkgs' `lsfg-vk`, override this from the same
+          nixpkgs.
+        '';
+      };
+    };
   };
 
   config = lib.mkIf (config.steamix.enable && cfg.enable) {
@@ -220,7 +234,7 @@ in
         { LSFG_CONFIG = "/etc/lsfg-vk/conf.toml"; }
     );
 
-    environment.systemPackages = lib.mkIf cfg.ui.enable [ pkgs.lsfg-vk-ui ];
+    environment.systemPackages = lib.mkIf cfg.ui.enable [ cfg.ui.package ];
 
     warnings =
       lib.optional (!isV2 && appIdEntries != [ ]) ''
@@ -229,6 +243,13 @@ in
         ${lib.getVersion cfg.package} matches games only by executable or
         process name, so those entries never apply. Use the game's executable
         (for Proton games its .exe name), or lsfg-vk 2.x.
+      ''
+      ++ lib.optional (cfg.ui.enable && majorOf cfg.ui.package != majorOf cfg.package) ''
+        steamix.losslessScaling.ui.package is lsfg-vk-ui
+        ${lib.getVersion cfg.ui.package}, but the layer is lsfg-vk
+        ${lib.getVersion cfg.package}. Each major version reads and writes
+        its own config format, so the UI would edit a config the layer does
+        not understand. Set ui.package from the same nixpkgs as package.
       ''
       ++ lib.optional (declarative && cfg.ui.enable) ''
         steamix.losslessScaling.ui.enable is on while profiles are set: the

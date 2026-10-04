@@ -119,10 +119,37 @@ let
           };
         };
       };
+      ui =
+        version:
+        pkgs.runCommand "lsfg-vk-ui-${version}" {
+          pname = "lsfg-vk-ui";
+          inherit version;
+        } "mkdir $out";
+      uiMatching = withLsfg {
+        steamix.losslessScaling = {
+          package = v2;
+          ui = {
+            enable = true;
+            package = ui "2.0.0";
+          };
+        };
+      };
+      uiMismatched = withLsfg {
+        steamix.losslessScaling = {
+          package = v2;
+          ui = {
+            enable = true;
+            package = ui "1.0.0";
+          };
+        };
+      };
       uiWithProfiles = withLsfg {
         steamix.losslessScaling = {
           package = v2;
-          ui.enable = true;
+          ui = {
+            enable = true;
+            package = ui "2.0.0";
+          };
           profiles.elden-ring = profile;
         };
       };
@@ -186,6 +213,15 @@ let
       (check "2.x does not warn about Steam App IDs" (
         !lib.any (w: lib.hasInfix "never apply" w) declarativeV2.warnings
       ) "a warning")
+      (check "ui.package is what gets installed" (lib.elem "2.0.0" (
+        map lib.getVersion (
+          lib.filter (p: lib.getName p == "lsfg-vk-ui") uiMatching.environment.systemPackages
+        )
+      )) "no lsfg-vk-ui 2.0.0")
+      (check "a UI on another major version than the layer warns" (
+        lib.any (w: lib.hasInfix "ui.package is lsfg-vk-ui" w) uiMismatched.warnings
+        && !lib.any (w: lib.hasInfix "ui.package is lsfg-vk-ui" w) uiMatching.warnings
+      ) "wrong warnings")
       (check "the UI with profiles warns that it cannot change them" (lib.any (
         w: lib.hasInfix "losslessScaling.ui.enable" w
       ) uiWithProfiles.warnings) "no warning")
