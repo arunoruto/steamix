@@ -82,9 +82,15 @@ let
       layers = config: lsfgIn config.hardware.graphics.extraPackages;
       layers32 = config: lsfgIn config.hardware.graphics.extraPackages32;
       # The value the TOML file is generated from (pkgs.formats.toml keeps it
-      # on the derivation). Reading the file itself would make evaluation
-      # build it, which `nix flake check --no-build` cannot do.
-      conf = config: config.environment.etc."lsfg-vk/conf.toml".source.value;
+      # on the derivation: as is on nixos-unstable, as JSON on 26.05).
+      # Reading the file itself would make evaluation build it, which
+      # `nix flake check --no-build` cannot do.
+      conf =
+        config:
+        let
+          value = config.environment.etc."lsfg-vk/conf.toml".source.value;
+        in
+        if builtins.isString value then builtins.fromJSON value else value;
 
       profile = {
         activeIn = [
