@@ -1,7 +1,8 @@
 # Evaluation-only checks for options simple enough that booting a VM would
 # prove nothing more: each case evaluates a NixOS configuration with the
-# module and asserts on the resulting config. Nothing is built, so the whole
-# file costs seconds. Behaviour (sessions, daemons, switching) belongs in the
+# module and asserts on the resulting config. Nothing is built during
+# evaluation (no import-from-derivation); the few checks on generated files
+# run when the derivation builds. The whole file costs seconds. Behaviour (sessions, daemons, switching) belongs in the
 # VM tests next to it.
 #
 # A failing case fails evaluation of this derivation, with the case's name
@@ -80,9 +81,10 @@ let
       lsfgIn = pkgsList: map lib.getVersion (lib.filter (p: lib.getName p == "lsfg-vk") pkgsList);
       layers = config: lsfgIn config.hardware.graphics.extraPackages;
       layers32 = config: lsfgIn config.hardware.graphics.extraPackages32;
-      # Parses the generated file back, so the checks are on what lsfg-vk reads.
-      conf =
-        config: builtins.fromTOML (builtins.readFile config.environment.etc."lsfg-vk/conf.toml".source);
+      # The value the TOML file is generated from (pkgs.formats.toml keeps it
+      # on the derivation). Reading the file itself would make evaluation
+      # build it, which `nix flake check --no-build` cannot do.
+      conf = config: config.environment.etc."lsfg-vk/conf.toml".source.value;
 
       profile = {
         activeIn = [
@@ -285,16 +287,6 @@ let
           fsr4.enable = true;
         };
       };
-      fsr4Pinned = withProton {
-        steamix.proton = {
-          ge.package = geStub;
-          fsr4 = {
-            enable = true;
-            version = "4.1.1";
-            indicator = true;
-          };
-        };
-      };
       both = withProton {
         steamix.proton = {
           ge = {
@@ -304,10 +296,6 @@ let
           fsr4.enable = true;
         };
       };
-
-      tool = config: (lib.head (compat config)).steamcompattool;
-      launcher = config: builtins.readFile "${tool config}/proton";
-      manifest = config: builtins.readFile "${tool config}/compatibilitytool.vdf";
     in
     [
       (check "GE-Proton is not installed by default" (names off == [ ]) (builtins.toJSON (names off)))
@@ -323,19 +311,44 @@ let
           "${geStub.name}-fsr4"
         ]
       ) (builtins.toJSON (names both)))
-      (check "the wrapper asks for the default FSR 4 unless told otherwise" (
-        lib.hasInfix "PROTON_FSR4_UPGRADE-1}" (launcher fsr4)
-        && !lib.hasInfix "PROTON_FSR4_INDICATOR" (launcher fsr4)
-      ) (launcher fsr4))
-      (check "version and indicator reach the wrapper" (
-        lib.hasInfix "PROTON_FSR4_UPGRADE-4.1.1}" (launcher fsr4Pinned)
-        && lib.hasInfix "PROTON_FSR4_INDICATOR-1}" (launcher fsr4Pinned)
-      ) (launcher fsr4Pinned))
-      (check "it is GE-Proton (FSR 4) under its own internal name" (
-        lib.hasInfix ''"display_name" "GE-Proton (FSR 4)"'' (manifest fsr4)
-        && lib.hasInfix ''"GE-Proton-FSR4" // Internal name'' (manifest fsr4)
-      ) (manifest fsr4))
     ];
+
+  # What the FSR 4 tool's files say. Checked when the derivation builds:
+  # reading them during evaluation would make evaluation build them.
+  protonFiles =
+    let
+      tool =
+        module:
+        (lib.head
+          (evalWith (
+            lib.recursiveUpdate {
+              steamix.enable = true;
+              steamix.proton = {
+                ge.package = geStub;
+                fsr4.enable = true;
+              };
+            } module
+          )).programs.steam.extraCompatPackages
+        ).steamcompattool;
+      fsr4 = tool { };
+      pinned = tool {
+        steamix.proton.fsr4 = {
+          version = "4.1.1";
+          indicator = true;
+        };
+      };
+    in
+    ''
+      # the wrapper asks for the default FSR 4 unless told otherwise
+      grep -qF 'PROTON_FSR4_UPGRADE-1}' ${fsr4}/proton
+      ! grep -qF PROTON_FSR4_INDICATOR ${fsr4}/proton
+      # version and indicator reach the wrapper
+      grep -qF 'PROTON_FSR4_UPGRADE-4.1.1}' ${pinned}/proton
+      grep -qF 'PROTON_FSR4_INDICATOR-1}' ${pinned}/proton
+      # it is GE-Proton (FSR 4) under its own internal name
+      grep -qF '"display_name" "GE-Proton (FSR 4)"' ${fsr4}/compatibilitytool.vdf
+      grep -qF '"GE-Proton-FSR4" // Internal name' ${fsr4}/compatibilitytool.vdf
+    '';
 
   # Run the wrapped launcher against the stub: the flag arrives, the real
   # launcher is started by its own path (Proton finds its files from that),
@@ -423,6 +436,7 @@ let
 in
 assert lib.all (x: x) cases;
 pkgs.runCommand "steamix-options" { } ''
+  ${protonFiles}
   ${wrapperRuns}
   echo "${toString (lib.length cases)} option checks passed, and the FSR 4 wrapper runs" > "$out"
 ''
