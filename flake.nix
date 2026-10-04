@@ -52,7 +52,7 @@
         in
         {
           inherit (steamixPackages) steamos-manager decky-loader;
-          inherit (steamixPackages.deckyPlugins) hltb-for-deck protondb-decky;
+          inherit (steamixPackages.deckyPlugins) hltb-for-deck protondb-decky decky-lsfg-vk;
           docs-reference = nixpkgs.legacyPackages.${system}.callPackage ./packages/docs-reference.nix { };
           # The documentation site, as published to GitHub Pages.
           docs = nixpkgs.legacyPackages.${system}.callPackage ./packages/docs.nix {

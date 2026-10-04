@@ -318,10 +318,33 @@ Game Versions & Betas. lsfg-vk finds the DLL in the usual Steam libraries;
 | `.profiles` | attrs of profiles | `{ }` | Declarative profiles; see below. |
 | `.ui.enable` | `bool` | `false` | lsfg-vk's configuration UI, for editing profiles in Desktop Mode. |
 | `.ui.package` | `package` | `pkgs.lsfg-vk-ui` | Which UI; keep it on the layer's major version (Steamix warns otherwise). |
+| `.deckyPlugin.enable` | `bool` | see below | Manage lsfg-vk from Gaming Mode with the Decky LSFG-VK plugin. |
+| `.deckyPlugin.package` | `null or package` | `pkgs.deckyPlugins.decky-lsfg-vk or null` | Which plugin. |
 
-**Declarative or interactive.** With `profiles` set, Steamix writes the
-whole config to `/etc/lsfg-vk/conf.toml` and points every session at it,
-read-only:
+**Three ways to run it.**
+
+- **From Gaming Mode, with Decky.** When Decky Loader is on and `profiles`
+  is empty, Steamix adds the [Decky LSFG-VK](https://github.com/xXJSONDeruloXx/decky-lsfg-vk)
+  plugin instead of installing the layer itself: per-game frame generation
+  settings in the Quick Access menu, the way it works on SteamOS. Press its
+  "Install lsfg-vk" button once; it installs its own lsfg-vk into your home.
+  The plugin needs Decky to run plugins as the Steam user, as SteamOS does,
+  because that is whose home it installs into:
+
+  ```nix
+  steamix.decky-loader.user = config.steamix.user;
+  ```
+
+  Without that, Steamix installs its own layer instead and warns why the
+  plugin was left out. The plugin's own lsfg-vk build is made for ordinary
+  distributions and does not run on NixOS, so Steamix's package repairs it:
+  the plugin validates settings with a NixOS build of its `lsfg-vk-cli`,
+  and its UI launcher starts a NixOS build of its UI. The layers games load
+  stay as upstream built them. It carries lsfg-vk's build, so it is unfree.
+  After a NixOS update that changed the plugin, press "Reinstall" in it, so
+  the copies in your home match.
+
+- **Declaratively,** with `profiles` set:
 
 ```nix
 steamix.losslessScaling = {
@@ -334,11 +357,13 @@ steamix.losslessScaling = {
 };
 ```
 
-With `profiles` empty, the config is `~/.config/lsfg-vk/conf.toml`, created
-with defaults the first time a game loads the layer, and edited with
-lsfg-vk's UI (`ui.enable`) or the settings of the Decky plugin. Do not use
-that plugin's "Install lsfg-vk" button alongside this option: it installs a
-second copy of the same layer into your home directory.
+  Steamix installs the layer, writes the whole config to
+  `/etc/lsfg-vk/conf.toml` and points every session at it, read-only; the
+  Decky plugin is left out, since it could not change it.
+
+- **Interactively without Decky:** with `profiles` empty and no Decky, the
+  config is `~/.config/lsfg-vk/conf.toml`, created with defaults the first
+  time a game loads the layer and edited with lsfg-vk's UI (`ui.enable`).
 
 A profile has `activeIn` (Steam App IDs, executables, Windows `.exe` names or
 process names; lsfg-vk 1.x matches only executables and process names, and

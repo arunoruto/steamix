@@ -362,7 +362,64 @@ let
       grep -qx "PROTON_FSR4_UPGRADE=0" <<<"$ran"
     '';
 
-  cases = heroicCases ++ losslessScalingCases ++ protonCases;
+  losslessDeckyCases =
+    let
+      v2 = pkgs.runCommand "lsfg-vk-2.0.0" {
+        pname = "lsfg-vk";
+        version = "2.0.0";
+      } "mkdir $out";
+      pluginStub = pkgs.runCommand "decky-lsfg-vk-stub" { } "mkdir $out";
+
+      withDecky =
+        extra:
+        evalWith (
+          lib.recursiveUpdate {
+            steamix = {
+              enable = true;
+              decky-loader.enable = true;
+              losslessScaling = {
+                enable = true;
+                package = v2;
+                deckyPlugin.package = pluginStub;
+              };
+            };
+          } extra
+        );
+
+      plugins = config: map (p: p.name) config.steamix.decky-loader.plugins;
+      hasLayer = config: lib.any (p: lib.getName p == "lsfg-vk") config.hardware.graphics.extraPackages;
+      warned = config: lib.any (w: lib.hasInfix "Decky LSFG-VK plugin was not added" w) config.warnings;
+
+      asSteamUser = withDecky { steamix.decky-loader.user = "alice"; };
+      asDeckyUser = withDecky { };
+      withProfiles = withDecky {
+        steamix.decky-loader.user = "alice";
+        steamix.losslessScaling.profiles.game.activeIn = [ "game" ];
+      };
+      forcedWithProfiles = withDecky {
+        steamix.decky-loader.user = "alice";
+        steamix.losslessScaling = {
+          deckyPlugin.enable = true;
+          profiles.game.activeIn = [ "game" ];
+        };
+      };
+    in
+    [
+      (check "Decky as the Steam user: the plugin manages lsfg-vk" (
+        plugins asSteamUser == [ pluginStub.name ] && !hasLayer asSteamUser
+      ) (builtins.toJSON (plugins asSteamUser)))
+      (check "Decky as its own user: Steamix's layer, no plugin, and a warning why" (
+        plugins asDeckyUser == [ ] && hasLayer asDeckyUser && warned asDeckyUser
+      ) (builtins.toJSON (plugins asDeckyUser)))
+      (check "declarative profiles keep Steamix's layer and leave the plugin out" (
+        plugins withProfiles == [ ] && hasLayer withProfiles && !warned withProfiles
+      ) (builtins.toJSON (plugins withProfiles)))
+      (check "forcing the plugin with profiles is an assertion" (lib.any (
+        a: !a.assertion && lib.hasInfix "deckyPlugin.enable and profiles" a.message
+      ) forcedWithProfiles.assertions) "no failing assertion")
+    ];
+
+  cases = heroicCases ++ losslessScalingCases ++ losslessDeckyCases ++ protonCases;
 in
 assert lib.all (x: x) cases;
 pkgs.runCommand "steamix-options" { } ''

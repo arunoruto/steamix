@@ -134,10 +134,9 @@ fits the same hook: it also needs Steam closed and has a command-line mode.
 
 Done (2026-10-04): `steamix.losslessScaling` installs the
 [lsfg-vk](https://lsfg-vk.dev) layer and writes its per-game profiles, in the
-format of whichever lsfg-vk version is installed. A Decky plugin with a
-per-game toggle in the Quick Access menu, editing the same profiles, would
-make it feel native in Gaming Mode; the existing Decky plugin installs its own
-copy of the layer, so it does not fit as is.
+format of whichever lsfg-vk version is installed. With Decky Loader, the
+Decky LSFG-VK plugin manages it from the Quick Access menu instead, with
+Steamix repairing the plugin's own lsfg-vk build to run on NixOS.
 
 ### Upscaling
 

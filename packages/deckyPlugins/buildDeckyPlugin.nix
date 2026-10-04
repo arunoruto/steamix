@@ -21,6 +21,9 @@
   # Release assets are named after the repository, which is also the directory
   # name Decky loads the plugin under and keys its settings by.
   repo ? pname,
+  # The release asset to fetch, for plugins that do not name it after the
+  # repository. fetchzip handles both tarballs and zips.
+  asset ? "${repo}.tar.gz",
   hash,
   meta ? { },
   ...
@@ -32,7 +35,7 @@ stdenvNoCC.mkDerivation (
       inherit pname version;
 
       src = fetchzip {
-        url = "https://github.com/${owner}/${repo}/releases/download/v${version}/${repo}.tar.gz";
+        url = "https://github.com/${owner}/${repo}/releases/download/v${version}/${asset}";
         inherit hash;
       };
 
@@ -70,6 +73,7 @@ stdenvNoCC.mkDerivation (
       removeAttrs args [
         "owner"
         "repo"
+        "asset"
         "hash"
         "meta"
       ]

@@ -30,4 +30,17 @@ in
 
   # Evaluation only: options too simple to need a VM.
   options = import ./options.nix { inherit pkgs testLib; };
+
+  # The Decky LSFG-VK plugin's backend on NixOS. The plugin carries lsfg-vk's
+  # non-free build, so it is built from a nixpkgs that allows that one.
+  decky-lsfg-vk = import ./decky-lsfg-vk.nix {
+    inherit pkgs;
+    plugin =
+      (import ../packages {
+        pkgs = import pkgs.path {
+          inherit (pkgs.stdenv.hostPlatform) system;
+          config.allowUnfreePredicate = p: lib.getName p == "decky-lsfg-vk";
+        };
+      }).deckyPlugins.decky-lsfg-vk;
+  };
 }

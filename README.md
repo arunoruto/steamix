@@ -85,7 +85,8 @@ that breaks something is one boot-menu entry away from being undone.
 - **Games from other launchers in Steam's library**: BoilR adds what Heroic,
   Lutris, itch.io and others installed, with artwork, on every login.
 - **Lossless Scaling frame generation** for Steam's games through lsfg-vk,
-  with per-game profiles declared in Nix or edited in its UI.
+  with per-game profiles declared in Nix, or managed from the Quick Access
+  menu through the Decky LSFG-VK plugin.
 - **AMD FSR 4** in games that ship FSR 3.1, through a "GE-Proton (FSR 4)"
   compatibility tool.
 - **SteamOS Manager** for the controls Steam reaches through it, including
@@ -254,8 +255,8 @@ nix build -L .#checks.x86_64-linux.greetd
 ```
 
 The VM tests are `greetd`, `sddm`, `steamos-manager`, `decky-loader` and
-`library`, and
-`options` checks simple options by evaluation alone; the
+`library`; `options` checks simple options by evaluation alone and
+`decky-lsfg-vk` drives a plugin's backend directly; the
 [testing guide](https://arunoruto.github.io/steamix/testing.html) covers what
 each checks, how to run them against the NixOS release, and how to poke at a
 test machine interactively. Format with `nix fmt`.
