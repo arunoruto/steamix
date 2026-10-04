@@ -231,9 +231,9 @@ in
         (for Proton games its .exe name), or lsfg-vk 2.x.
       ''
       ++ lib.optional (declarative && cfg.ui.enable) ''
-      steamix.losslessScaling.ui.enable is on while profiles are set: the
-      config is then the read-only /etc/lsfg-vk/conf.toml, which the UI
-      cannot change. Leave profiles empty to configure lsfg-vk with the UI.
-    '';
+        steamix.losslessScaling.ui.enable is on while profiles are set: the
+        config is then the read-only /etc/lsfg-vk/conf.toml, which the UI
+        cannot change. Leave profiles empty to configure lsfg-vk with the UI.
+      '';
   };
 }
