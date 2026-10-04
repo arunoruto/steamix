@@ -231,6 +231,9 @@ follow if the profiles are ever flattened.
 
 ## ARM devices
 
+The concrete plan, for a Retroid Pocket 6, is in
+[ARM port: Retroid Pocket 6](./arm-port.md).
+
 NixOS runs on aarch64 as well as it runs on x86_64, and the hardware is
 arriving: Snapdragon handhelds (AYN Odin and Thor, Retroid Pocket, AYANEO
 Pocket), and Valve's own ARM64 Steam client, built for the Steam Frame.
