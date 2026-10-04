@@ -1,0 +1,73 @@
+# Steamix's CI. This file is the canonical copy and moves with Steamix when
+# it gets its own repository.
+#
+# GitHub only loads workflows that are regular files under the repository's
+# root .github/workflows, and does not follow symlinks there (a symlinked
+# workflow fails to run; github.com/orgs/community/discussions/109744). So
+# .github/workflows/steamix.yaml at the root is a byte-for-byte copy of this
+# file, and the first step below fails the run if the two ever differ. Edit
+# this one, then:
+#
+#   cp steamix/.github/workflows/steamix.yaml .github/workflows/steamix.yaml
+name: Steamix VM tests
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "steamix/**"
+      - "flake.lock"
+      - ".github/workflows/steamix.yaml"
+  # The nightly lockfile bump is pushed with GITHUB_TOKEN, and pushes made
+  # with that token do not trigger other workflows. Follow it explicitly, so
+  # a nixpkgs bump that breaks Steamix shows up the same night instead of on
+  # the next Steamix change.
+  workflow_run:
+    workflows: ["Update Lockfile"]
+    types: [completed]
+
+jobs:
+  vm-test:
+    name: ${{ matrix.test }} (${{ matrix.channel.name }})
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      # One failing test or channel must not hide the others: the two
+      # channels have already disagreed about greetd's PAM stack.
+      fail-fast: false
+      matrix:
+        test: [greetd, sddm, decky-loader]
+        # The tests are the Steamix flake's own `checks`. Its nixpkgs input
+        # is pinned to one this repository locks, so a run is reproducible
+        # and matches what the hosts get: `--inputs-from .` makes the
+        # parent's locked inputs resolvable by name, and --override-input
+        # points Steamix's nixpkgs at one of them.
+        #   stable:   the nixpkgs the hosts run
+        #   unstable: the channel Steamix's own flake follows
+        channel:
+          - { name: stable, input: nixpkgs }
+          - { name: unstable, input: nixpkgs-unstable }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Root workflow is a copy of Steamix's
+        run: |
+          cmp steamix/.github/workflows/steamix.yaml .github/workflows/steamix.yaml || {
+            echo "::error file=.github/workflows/steamix.yaml::differs from steamix/.github/workflows/steamix.yaml, the canonical copy. Run: cp steamix/.github/workflows/steamix.yaml .github/workflows/steamix.yaml"
+            exit 1
+          }
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with:
+          logger: pretty
+          # Hands the runner's /dev/kvm to the Nix daemon; without it the
+          # test driver falls back to emulation and takes many times longer.
+          kvm: true
+      - name: Run ${{ matrix.test }} against ${{ matrix.channel.name }}
+        run: >-
+          nix build -L --no-write-lock-file
+          --inputs-from .
+          --override-input nixpkgs ${{ matrix.channel.input }}
+          ./steamix#checks.x86_64-linux.${{ matrix.test }}
