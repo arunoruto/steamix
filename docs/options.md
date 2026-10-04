@@ -282,6 +282,64 @@ login. The key never enters the Nix store: the config is written with a
 placeholder and the key is filled in at login, into a file only the user can
 read.
 
+## `steamix.losslessScaling`
+
+[Lossless Scaling](https://store.steampowered.com/app/993090/Lossless_Scaling/)'s
+frame generation for Steam's games, through
+[lsfg-vk](https://lsfg-vk.dev), a Vulkan layer that runs it with the DLL from
+your own copy of Lossless Scaling.
+
+You need Lossless Scaling installed from Steam. lsfg-vk 2.x additionally
+needs its "lsfg-vk" beta branch: in Steam, Lossless Scaling > Properties >
+Game Versions & Betas. lsfg-vk finds the DLL in the usual Steam libraries;
+`dll` points elsewhere.
+
+| Option | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `.enable` | `bool` | `false` | Install the layer for Steam's games. |
+| `.package` | `package` | `pkgs.lsfg-vk` | What to install. |
+| `.support32Bit.enable` | `bool` | `false` | Also install the 32-bit layer, for 32-bit games. |
+| `.dll` | `null or str` | `null` | Where Lossless Scaling's DLL is, if lsfg-vk does not find it. |
+| `.allowHalfPrecision` | `bool` | `true` | FP16 frame generation, 2 to 3 times faster where supported (2.x). |
+| `.profiles` | attrs of profiles | `{ }` | Declarative profiles; see below. |
+| `.ui.enable` | `bool` | `false` | lsfg-vk's configuration UI, for editing profiles in Desktop Mode. |
+
+**Declarative or interactive.** With `profiles` set, Steamix writes the
+whole config to `/etc/lsfg-vk/conf.toml` and points every session at it,
+read-only:
+
+```nix
+steamix.losslessScaling = {
+  enable = true;
+  profiles.elden-ring = {
+    activeIn = [ "1245620" ]; # Steam App ID, executable or process name
+    multiplier = 2;
+    flowScale = 0.75;
+  };
+};
+```
+
+With `profiles` empty, the config is `~/.config/lsfg-vk/conf.toml`, created
+with defaults the first time a game loads the layer, and edited with
+lsfg-vk's UI (`ui.enable`) or the settings of the Decky plugin. Do not use
+that plugin's "Install lsfg-vk" button alongside this option: it installs a
+second copy of the same layer into your home directory.
+
+A profile has `activeIn` (Steam App IDs, executables, Windows `.exe` names or
+process names; lsfg-vk 1.x matches only executables and process names, and
+Steamix warns about App IDs there), `multiplier` (2 doubles the frame rate),
+`flowScale` (0.25 to 1, the resolution of the motion estimation),
+`performanceMode`, `pacingMode` (2.x) and `hdrMode` (1.x).
+
+**Versions and licence.** nixpkgs has shipped two major versions with
+different config formats. NixOS 26.05 has the MIT-licensed 1.0;
+nixos-unstable has 2.0, licensed CC BY-NC-ND 4.0, which nixpkgs treats as
+unfree. Steamix writes whichever format the installed version reads, and the
+variable it reads the path from (`LSFG_CONFIG` or `LSFGVK_CONFIG`). For 2.0,
+`nixpkgs.config.allowUnfree` (or a predicate allowing `lsfg-vk`) has to
+permit it. Its licence also forbids redistribution, so no binary cache
+carries it, Steamix's included, and it builds on your machine.
+
 ## `steamix.decky-loader`
 
 [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) injects a

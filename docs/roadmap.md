@@ -130,6 +130,15 @@ launchers installed into Steam's library on every login, through
 where [Steam ROM Manager](https://github.com/SteamGridDB/steam-rom-manager)
 fits the same hook: it also needs Steam closed and has a command-line mode.
 
+### Lossless Scaling frame generation
+
+Done (2026-10-04): `steamix.losslessScaling` installs the
+[lsfg-vk](https://lsfg-vk.dev) layer and writes its per-game profiles, in the
+format of whichever lsfg-vk version is installed. A Decky plugin with a
+per-game toggle in the Quick Access menu, editing the same profiles, would
+make it feel native in Gaming Mode; the existing Decky plugin installs its own
+copy of the layer, so it does not fit as is.
+
 ### Streaming and scheduler
 
 Cheap wins on top of upstream options:

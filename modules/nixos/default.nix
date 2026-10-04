@@ -21,6 +21,7 @@ in
     ./decky-loader.nix
     ./heroic.nix
     ./library.nix
+    ./lossless-scaling.nix
     ./manager.nix
     ./gaming-mode.nix
     ./tweaks.nix
