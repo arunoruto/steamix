@@ -17,11 +17,19 @@
   callPackage,
   buildFHSEnv,
   writeShellScript,
+  writeText,
   extraPkgs ? pkgs: [ ],
   extraArgs ? "",
 }:
 let
   bootstrap = callPackage ./bootstrap.nix { };
+
+  # Without a sound server, libpulse tries to start one and waits for it,
+  # and Steam's client never gets past its audio setup to open its UI.
+  # With autospawn off it carries on without sound.
+  pulseClientConfig = writeText "steam-arm-pulse-client.conf" ''
+    autospawn = no
+  '';
 
   launcher = writeShellScript "steam-arm" ''
     set -euo pipefail
@@ -171,6 +179,8 @@ buildFHSEnv {
     export LIBGL_DRIVERS_PATH=/run/opengl-driver/lib/dri
     export __EGL_VENDOR_LIBRARY_DIRS=/run/opengl-driver/share/glvnd/egl_vendor.d
     export LIBVA_DRIVERS_PATH=/run/opengl-driver/lib/dri
+
+    export PULSE_CLIENTCONFIG="''${PULSE_CLIENTCONFIG:-${pulseClientConfig}}"
   '';
 
   # Steam expects a real /sbin/ldconfig (a symlink loops in nested
