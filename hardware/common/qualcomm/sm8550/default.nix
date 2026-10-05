@@ -13,6 +13,19 @@
 let
   steamixPackages = import ../../../../packages { inherit pkgs; };
   package = name: pkgs.${name} or steamixPackages.${name};
+
+  # What this SoC uses from linux-firmware: the Adreno 740's microcode and
+  # the generic Adreno files beside it, the SM8550 directory, the video
+  # firmware, the WCN7850's Wi-Fi 7 and Bluetooth. 53 MB of its 1.9 GB.
+  linuxFirmware = pkgs.runCommand "linux-firmware-sm8550-${pkgs.linux-firmware.version}" { } ''
+    cd ${pkgs.linux-firmware}/lib/firmware
+    dest="$out/lib/firmware"
+    mkdir -p "$dest/qcom" "$dest/ath12k"
+    find qcom -maxdepth 1 \( -type f -o -type l \) -exec cp -L {} "$dest/qcom/" \;
+    cp -rL qcom/sm8550 qcom/vpu "$dest/qcom/"
+    cp -rL ath12k/WCN7850 "$dest/ath12k/"
+    cp -rL qca "$dest/"
+  '';
 in
 {
   imports = [ ../../rocknix-abl ];
@@ -37,9 +50,15 @@ in
   boot.initrd.includeDefaultModules = false;
 
   # Device firmware first, so its newer Wi-Fi and Bluetooth files win over
-  # linux-firmware's.
-  hardware.firmware = lib.mkBefore [ (package "armada-firmware") ];
-  hardware.enableRedistributableFirmware = lib.mkDefault true;
+  # linux-firmware's. Of linux-firmware only this SoC's part: the whole of
+  # it would be most of a minimal system's size. For other hardware (a USB
+  # Wi-Fi adapter, say), set hardware.enableRedistributableFirmware.
+  hardware.firmware = lib.mkMerge [
+    (lib.mkBefore [ (package "armada-firmware") ])
+    [ linuxFirmware ]
+  ];
+  hardware.enableRedistributableFirmware = lib.mkDefault false;
+  hardware.wirelessRegulatoryDatabase = lib.mkDefault true;
 
   boot.loader.rocknix-abl.enable = lib.mkDefault true;
 }
