@@ -24,6 +24,12 @@ jobs:
       - uses: DeterminateSystems/nix-installer-action@main
       - name: Allow unprivileged user namespaces (bubblewrap)
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Graphics as on NixOS, and an X server with GLX
+        run: |
+          # steam-arm's FHS environment looks for drivers where NixOS puts
+          # them; Steam's own UI toolkit needs GLX, which nixpkgs' Xvfb lacks.
+          sudo ln -sfn "$(nix build --no-link --print-out-paths 'nixpkgs#mesa^out')" /run/opengl-driver
+          sudo apt-get update -q && sudo apt-get install -y -q xvfb
       - name: Build steam-arm
         run: NIXPKGS_ALLOW_UNFREE=1 nix build -L --impure --out-link steam-arm .#legacyPackages.aarch64-linux.steam-arm
       - name: Run Steam and take screenshots
@@ -34,10 +40,9 @@ jobs:
           export HOME="$RUNNER_TEMP/home" XDG_RUNTIME_DIR="$RUNNER_TEMP/run" DISPLAY=:99
           mkdir -p "$HOME" "$XDG_RUNTIME_DIR" shots
           chmod 700 "$XDG_RUNTIME_DIR"
-          xvfb=$(nix build --no-link --print-out-paths 'nixpkgs#xorg-server^out')/bin/Xvfb
           import=$(nix build --no-link --print-out-paths 'nixpkgs#imagemagick^out')/bin/import
           dbus=$(nix build --no-link --print-out-paths 'nixpkgs#dbus^out')/bin/dbus-run-session
-          "$xvfb" :99 -screen 0 1280x800x24 &
+          Xvfb :99 -screen 0 1280x800x24 +extension GLX &
           sleep 3
           # shellcheck disable=SC2086
           "$dbus" -- ./steam-arm/bin/steam-arm $ARGS > steam.log 2>&1 &
