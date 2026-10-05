@@ -103,6 +103,23 @@ let
         # Built in by Armada, overridden by nixpkgs' common config otherwise.
         BPF_JIT_ALWAYS_ON = lib.mkForce yes;
         NLS_UTF8 = lib.mkForce yes;
+
+        # What NixOS's firewall loads, through iptables (nftables backend)
+        # or nftables (found booting the image in QEMU): nixpkgs' own
+        # kernels get these from autoModules, which this one leaves off.
+        IP_NF_TARGET_REJECT = module;
+        IP6_NF_TARGET_REJECT = module;
+        IP_NF_MATCH_RPFILTER = module;
+        IP6_NF_MATCH_RPFILTER = module;
+        NETFILTER_XT_MATCH_PKTTYPE = module;
+        NETFILTER_XT_MATCH_STATE = module;
+        NFT_CT = module;
+        NFT_LOG = module;
+        NFT_LIMIT = module;
+        NFT_REJECT = module;
+        NFT_FIB_INET = module;
+        NFT_FIB_IPV4 = module;
+        NFT_FIB_IPV6 = module;
       };
 
       extraPassthru = {
