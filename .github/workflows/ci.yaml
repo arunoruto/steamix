@@ -61,6 +61,24 @@ jobs:
       - name: Run ${{ matrix.test }} against ${{ matrix.channel.name }}
         run: nix build -L ${{ matrix.channel.args }} .#checks.x86_64-linux.${{ matrix.test }}
 
+  # The Retroid Pocket 6 bring-up image, built natively and booted in QEMU
+  # (emulated: GitHub's ARM runners have no KVM). The kernel comes from the
+  # cache, or is built here (about 45 minutes) when it changed.
+  handheld-boot:
+    name: boot retroid-pocket-6 (aarch64)
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Pull from the Steamix cache
+        uses: cachix/cachix-action@v17
+        with:
+          name: steamix
+          skipPush: true
+      - name: Build the image and boot it
+        run: nix build -L .#checks.aarch64-linux.boot-retroid-pocket-6
+
   cache:
     name: cache
     needs: [format, eval, vm-test]

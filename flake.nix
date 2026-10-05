@@ -105,9 +105,24 @@
 
       formatter = eachSystem (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
 
-      # VM tests (see tests/default.nix). x86_64-linux only: Gaming Mode is
-      # Steam, and Steam is x86_64.
-      checks.x86_64-linux = import ./tests { pkgs = nixpkgs.legacyPackages.x86_64-linux; };
+      # VM tests (see tests/default.nix), x86_64-linux: Gaming Mode is
+      # Steam, and Steam is x86_64 (for now).
+      checks.x86_64-linux = import ./tests { pkgs = nixpkgs.legacyPackages.x86_64-linux; } // {
+        # The bring-up image (kernel cross-compiled) booted in QEMU.
+        boot-retroid-pocket-6 = import ./tests/boot-handheld.nix {
+          pkgs = nixpkgs.legacyPackages.x86_64-linux;
+          image = self.packages.x86_64-linux.sd-image-retroid-pocket-6;
+          name = "retroid-pocket-6";
+        };
+      };
+
+      # The bring-up image, built natively, booted in QEMU. Run by CI on an
+      # ARM runner.
+      checks.aarch64-linux.boot-retroid-pocket-6 = import ./tests/boot-handheld.nix {
+        pkgs = nixpkgs.legacyPackages.aarch64-linux;
+        image = self.packages.aarch64-linux.sd-image-retroid-pocket-6;
+        name = "retroid-pocket-6";
+      };
 
       # What CI pushes to steamix.cachix.org: what a Steamix machine would
       # otherwise compile itself, because cache.nixos.org does not have it.

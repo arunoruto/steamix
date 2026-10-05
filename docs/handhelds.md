@@ -7,8 +7,9 @@ patches, device trees, kernel config and firmware, and the
 it takes shape, and is meant for nixos-hardware once it boots. The plan
 behind it is [ARM port: Retroid Pocket 6](./arm-port.md).
 
-> **Status:** builds, untested on hardware. The first device has not booted
-> it yet.
+> **Status:** builds, and boots in an emulated ARM machine (QEMU, with the
+> image's own `/KERNEL`); untested on hardware. The first device has not
+> booted it yet.
 
 ## Devices
 
@@ -106,6 +107,17 @@ overwrites whatever it is given):
 ```sh
 zstdcat result/sd-image/*.img.zst | sudo dd of=/dev/sdX bs=4M conv=fsync status=progress
 ```
+
+## Size
+
+The bring-up system is 1.9 GiB, the compressed image 690 MiB. Of
+linux-firmware, only the SoC's part is installed (53 MB of 1.9 GB);
+`hardware.enableRedistributableFirmware` brings back the rest, for a USB
+Wi-Fi adapter say. With Plasma and gamescope on top, about 7 GiB.
+
+For comparison, Armada's 2026-09-26 release uses 12.9 GB of its root
+filesystem, compressed (btrfs, zstd), with Steam, Plasma, Waydroid and the
+x86 graphics stack for FEX installed.
 
 ## Flashing the bootloader
 
