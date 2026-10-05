@@ -1,0 +1,59 @@
+# Runs steam-arm on GitHub's ARM runners, which are real ARM hardware
+# (no emulation; QEMU's makes Steam's Chromium UI take hours), under Xvfb
+# with software rendering, and uploads screenshots and Steam's logs.
+#
+# Manual only: it downloads Valve's client (unfree, built here and never
+# pushed anywhere) and takes about 20 minutes.
+name: steam-arm GUI
+on:
+  workflow_dispatch:
+    inputs:
+      args:
+        description: Arguments for steam-arm
+        default: "-steamdeck"
+      minutes:
+        description: How long to let Steam run
+        default: "12"
+
+jobs:
+  gui:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - name: Allow unprivileged user namespaces (bubblewrap)
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Build steam-arm
+        run: NIXPKGS_ALLOW_UNFREE=1 nix build -L --impure --out-link steam-arm .#legacyPackages.aarch64-linux.steam-arm
+      - name: Run Steam and take screenshots
+        env:
+          ARGS: ${{ inputs.args }}
+          MINUTES: ${{ inputs.minutes }}
+        run: |
+          export HOME="$RUNNER_TEMP/home" XDG_RUNTIME_DIR="$RUNNER_TEMP/run" DISPLAY=:99
+          mkdir -p "$HOME" "$XDG_RUNTIME_DIR" shots
+          chmod 700 "$XDG_RUNTIME_DIR"
+          xvfb=$(nix build --no-link --print-out-paths nixpkgs#xorg-server)/bin/Xvfb
+          import=$(nix build --no-link --print-out-paths nixpkgs#imagemagick)/bin/import
+          dbus=$(nix build --no-link --print-out-paths nixpkgs#dbus)/bin/dbus-run-session
+          "$xvfb" :99 -screen 0 1280x800x24 &
+          sleep 3
+          # shellcheck disable=SC2086
+          "$dbus" -- ./steam-arm/bin/steam-arm $ARGS > steam.log 2>&1 &
+          for i in $(seq "$MINUTES"); do
+            sleep 60
+            "$import" -window root -display :99 "shots/$(printf %02d "$i").png" || true
+            echo "minute $i: $(pgrep -fc 'steamwebhelper --type=renderer' || true) renderers"
+          done
+          pkill -f steamrtarm64/steam || true
+          sleep 5
+          cp -r "$HOME/.local/share/Steam/logs" steam-logs || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: steam-arm-gui
+          path: |
+            shots/
+            steam.log
+            steam-logs/
