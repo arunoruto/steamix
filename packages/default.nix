@@ -10,7 +10,7 @@ let
   armadaSource = pkgs.callPackage ./armada-source.nix { };
 
   linux_armada = pkgs.callPackage ./linux-armada/package.nix {
-    inherit armadaSource;
+    armadaSource = pkgs.callPackage ./armada-source.nix { kernelOnly = true; };
     # What nixpkgs gives its own kernels.
     kernelPatches = with pkgs.kernelPatches; [
       bridge_stp_helper

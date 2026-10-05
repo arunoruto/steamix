@@ -107,6 +107,12 @@ let
 
       extraPassthru = {
         inherit armadaSource;
+        # The corresponding source, with this file: Linux and Armada's
+        # kernel directory. The binary cache carries them with the kernel.
+        sources = {
+          linux = tarball;
+          armada = armadaSource;
+        };
       };
       kernelTests.armada-config = callPackage ./config-test.nix { inherit kernel armada; };
 

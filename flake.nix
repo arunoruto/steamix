@@ -138,9 +138,15 @@
         }
         # The handheld kernel: hours under emulation, so the one thing an
         # x86_64 machine building a handheld image should not build itself.
-        # (Its firmware is unfree and stays out.)
+        # It is GPL-2.0, so its source goes into the cache with it (Linux's
+        # tarball and Armada's kernel directory). Its firmware has no
+        # licence and stays out.
         // nixpkgs.lib.optionalAttrs (system == "aarch64-linux") {
-          cache.linux-armada = steamixPackages.linux_armada;
+          cache = {
+            linux-armada = steamixPackages.linux_armada;
+            linux-armada-source-linux = steamixPackages.linux_armada.sources.linux;
+            linux-armada-source-armada = steamixPackages.linux_armada.sources.armada;
+          };
         }
       );
 
