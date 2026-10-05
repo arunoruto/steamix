@@ -134,10 +134,17 @@ updated there. It runs in an FHS environment with the libraries the ARM64
 client links against, started the way Armada starts it. It needs an
 ARMv8.1 CPU with LSE atomics.
 
-Status: the first-launch install is verified in an emulated ARM machine.
-The client itself, its UI on the device's GPU, and games (ARM64 Proton,
-FEX) are not yet. It is never cached: Valve publishes the client for
-download, nothing grants redistributing it.
+Status: verified on real ARM hardware (GitHub's ARM runners, the manual
+`steam-arm GUI` workflow, software rendering): the first launch installs
+the client, which restarts itself and brings up its UI, up to the sign-in
+screen. Signing in, the UI on the device's GPU, and games (ARM64 Proton,
+FEX) are not verified yet. It is never cached: Valve publishes the client
+for download, nothing grants redistributing it.
+
+Started from a systemd service with `PAMName=` (cage, for example), the
+session keeps capabilities that make bubblewrap refuse to start
+([nixpkgs#533140](https://github.com/NixOS/nixpkgs/issues/533140)); drop
+them first: `setpriv --inh-caps=-all --ambient-caps=-all steam-arm`.
 
 When Valve releases the ARM64 client officially, this is meant for
 nixpkgs' `steam`.

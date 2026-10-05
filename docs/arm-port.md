@@ -117,9 +117,9 @@ aarch64, where Armada runs Decky's x86 binary under FEX) and BoilR carry over.
 ## Phase 3: Steam
 
 Started (2026-10-05): `steam-arm` ([Handhelds](./handhelds.md#steam)) pins
-the client's updater and Valve's ARM64 runtime, and its first-launch install
-is verified in QEMU. Left: the client on the device, and Steamix's Gaming
-Mode starting it on aarch64.
+the client's updater and Valve's ARM64 runtime; on ARM hardware it installs
+the client and brings up Steam's UI to the sign-in screen. Left: the client
+on the device's GPU, and Steamix's Gaming Mode starting it on aarch64.
 
 nixpkgs' Steam is x86-only (`programs.steam` needs the 32-bit package set),
 so Steam on ARM is a separate package, modelled on Armada's bootstrap:
