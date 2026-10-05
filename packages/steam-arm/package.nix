@@ -52,8 +52,18 @@ let
     export SYSTEM_PATH="$PATH"
     export SYSTEM_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 
+    # What Valve's steam.sh does for its x86 clients (it has no ARM64
+    # path): Steam exits with 42 when it wants to be started again, after
+    # updating itself, the first launch included.
     cd "$steam_arm_dir"
-    exec ./steam ${extraArgs} "$@"
+    while true; do
+      status=0
+      ./steam ${extraArgs} "$@" || status=$?
+      if [ "$status" != 42 ]; then
+        exit "$status"
+      fi
+      echo "steam-arm: restarting Steam by request" >&2
+    done
   '';
 in
 buildFHSEnv {
@@ -63,8 +73,9 @@ buildFHSEnv {
   includeClosures = true;
 
   # As nixpkgs' Steam (the Steam Runtime's distro assumptions), plus what
-  # Valve's ARM64 client links against from the host, read from its ELF
-  # files. 64-bit only: there is no 32-bit half on ARM.
+  # Valve's ARM64 client links against from the host, read from the ELF
+  # files of an installed client. 64-bit only: there is no 32-bit half on
+  # ARM.
   targetPkgs =
     pkgs:
     with pkgs;
@@ -124,6 +135,21 @@ buildFHSEnv {
       libssh2
       brotli
       SDL2
+
+      # steamwebhelper (Chromium), which the client installs on first launch
+      alsa-lib
+      atk
+      at-spi2-atk
+      at-spi2-core
+      bzip2
+      cairo
+      cups
+      expat
+      libvdpau
+      libxkbcommon
+      nspr
+      nss
+      pango
 
       # crashes on startup if it can't find libx11 locale files
       (pkgs.runCommand "xorg-locale" { } ''
