@@ -90,6 +90,8 @@ buildFHSEnv {
       xdg-utils
       xz
       zenity
+      # taskset: steamwebhelper.sh pins the web helper to cores with it
+      util-linux
 
       glibc
       libxcrypt
