@@ -151,6 +151,10 @@
             gamescope-wsi-32 = pkgs.pkgsi686Linux.gamescope-wsi;
           };
         }
+        # Valve's native ARM64 Steam client: unfree, so not in `packages`.
+        // nixpkgs.lib.optionalAttrs (system == "aarch64-linux") {
+          inherit (steamixPackages) steam-arm;
+        }
         # The handheld kernel: hours under emulation, so the one thing an
         # x86_64 machine building a handheld image should not build itself.
         # It is GPL-2.0, so its source goes into the cache with it (Linux's

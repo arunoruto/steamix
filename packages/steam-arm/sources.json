@@ -1,0 +1,14 @@
+{
+  "client": {
+    "version": "1790904859",
+    "channel": "steamdeck_publicbeta",
+    "seed": {
+      "file": "bins_linuxarm64_linuxarm64.zip.5350c2f61a366b30db0ac6283c805cb8c7f80f18",
+      "sha256": "e9e71a07f91dfcc223a246931e19cfc079ee2ace718a1afeb5d446e3801a8795"
+    }
+  },
+  "runtime": {
+    "version": "3c.0.20260824.257593",
+    "sha256": "2f2be461b6a4360828e200e1644e18cd957eedc36a38e5a1e13a39276320b6e2"
+  }
+}

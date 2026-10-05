@@ -28,6 +28,10 @@ in
   inherit linux_armada;
   linuxPackages_armada = pkgs.linuxPackagesFor linux_armada;
   armada-firmware = pkgs.callPackage ./armada-firmware/package.nix { inherit armadaSource; };
+
+  # Valve's native ARM64 Steam client, until nixpkgs' steam has one.
+  # aarch64-linux, unfree.
+  steam-arm = pkgs.callPackage ./steam-arm/package.nix { };
   rocknix-abl = pkgs.callPackage ./rocknix-abl/package.nix { inherit armadaSource; };
 
   # pkgs.deckyPlugins.*: buildDeckyPlugin plus one directory per packaged

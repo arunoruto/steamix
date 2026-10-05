@@ -108,6 +108,40 @@ overwrites whatever it is given):
 zstdcat result/sd-image/*.img.zst | sudo dd of=/dev/sdX bs=4M conv=fsync status=progress
 ```
 
+## Steam
+
+nixpkgs' `steam` wraps Valve's launcher, which only has an x86 bootstrap,
+and does not evaluate on aarch64. `steam-arm` packages Valve's native ARM64
+client instead, the one Valve's own ARM devices run (a public beta; Valve
+has not released Steam for ARM Linux officially):
+
+```nix
+{ lib, pkgs, ... }:
+{
+  # steam-arm and its bootstrap are unfree.
+  nixpkgs.config.allowUnfreePredicate =
+    p: builtins.elem (lib.getName p) [ "steam-arm" "steam-arm-bootstrap" ];
+  environment.systemPackages = [ pkgs.steam-arm ];
+}
+```
+
+It works like nixpkgs' Steam. The store holds a bootstrap (the client's
+updater from Valve's ARM64 manifest and Valve's ARM64 Steam Runtime, both
+pinned by the SHA-256 Valve publishes, `packages/steam-arm/update.py` to
+bump). The first launch copies it to `~/.local/share/Steam`, and the client
+installs the rest of itself from Valve's servers (670 MB) and keeps itself
+updated there. It runs in an FHS environment with the libraries the ARM64
+client links against, started the way Armada starts it. It needs an
+ARMv8.1 CPU with LSE atomics.
+
+Status: the first-launch install is verified in an emulated ARM machine.
+The client itself, its UI on the device's GPU, and games (ARM64 Proton,
+FEX) are not yet. It is never cached: Valve publishes the client for
+download, nothing grants redistributing it.
+
+When Valve releases the ARM64 client officially, this is meant for
+nixpkgs' `steam`.
+
 ## Size
 
 The bring-up system is 1.9 GiB, the compressed image 690 MiB. Of
