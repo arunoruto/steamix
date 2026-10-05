@@ -9,10 +9,12 @@
 # selectable at boot: every switch rewrites /KERNEL and keeps the previous
 # one as KERNEL.BAK, to rename back by hand if a generation does not boot.
 #
-# The geometry is Armada OS's (system_files/usr/lib/armada/bootimg-args).
-# nixpkgs' mkbootimg (osm0sis's) writes the same image as the AOSP one
-# Armada uses, except for the unused second-stage load address, which the
-# bootloader ignores when there is no second stage.
+# The image matches what Armada OS ships (compared with its 2026-09-26
+# release): its geometry (system_files/usr/lib/armada/bootimg-args), a zero
+# second-stage address, and device trees without the __symbols__ node
+# nixpkgs builds them with for overlays. Armada's have none, and a
+# bootloader that applies Android's device tree overlays should find
+# nothing to apply them to.
 {
   config,
   lib,
@@ -27,6 +29,8 @@ let
       lib.makeBinPath [
         pkgs.coreutils
         pkgs.diffutils
+        pkgs.dtc
+        pkgs.gnugrep
         pkgs.gzip
       ]
     }
@@ -73,6 +77,10 @@ in
         "0x06000000"
         "--tags_offset"
         "0x00000100"
+        # base + this wraps to 0: no second stage, as AOSP's mkbootimg and
+        # Armada's image have it.
+        "--second_offset"
+        "0xf0000000"
         "--header_version"
         "0"
         "--os_version"

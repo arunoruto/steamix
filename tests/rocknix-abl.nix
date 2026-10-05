@@ -1,8 +1,8 @@
 # The /KERNEL writer of boot.loader.rocknix-abl, run against a stand-in
 # system: the boot image unpacks to Armada's geometry, the kernel is
-# gzip(Image) with the device trees appended in order, the command line
-# points at the system's init, and a second system moves the first image to
-# KERNEL.BAK. Also that an over-long command line and a missing device tree
+# gzip(Image) with the device trees appended in order and stripped of their
+# overlay symbols, the command line points at the system's init, and a
+# second system moves the first image to KERNEL.BAK. Also that an over-long command line and a missing device tree
 # are refused rather than written.
 { pkgs }:
 let
@@ -27,16 +27,27 @@ pkgs.runCommand "steamix-rocknix-abl"
     nativeBuildInputs = [
       pkgs.mkbootimg-osm0sis
       pkgs.gzip
+      pkgs.dtc
     ];
   }
   ''
+    # Two device trees, built with overlay symbols as nixpkgs builds them.
+    for b in a b; do
+      echo "/dts-v1/; / { model = \"board $b\"; l: node { }; };" > board-$b.dts
+      dtc -@ -I dts -O dtb -o board-$b.dtb board-$b.dts
+      fdtget -l board-$b.dtb / | grep -qx __symbols__
+      # What the writer should append: the same, without the symbols.
+      cp board-$b.dtb stripped-$b.dtb
+      fdtput -r stripped-$b.dtb /__symbols__
+    done
+
     # A stand-in toplevel: what the writer reads from a NixOS system.
     system() {
       mkdir -p "$1/dtbs/qcom"
       echo "Image of $1" > "$1/kernel"
       echo "initrd of $1" > "$1/initrd"
-      echo "dtb A" > "$1/dtbs/qcom/board-a.dtb"
-      echo "dtb B" > "$1/dtbs/qcom/board-b.dtb"
+      cp board-a.dtb "$1/dtbs/qcom/board-a.dtb"
+      cp board-b.dtb "$1/dtbs/qcom/board-b.dtb"
       echo -n "$2" > "$1/kernel-params"
     }
     system "$PWD/one" "console=tty0 loglevel=4"
@@ -55,14 +66,16 @@ pkgs.runCommand "steamix-rocknix-abl"
     check 0x00008000 kernel_offset
     check 0x06000000 ramdisk_offset
     check 0x00000100 tags_offset
+    check 0xf0000000 second_offset
     check 0 header_version
     check 12.0.0 os_version
     check 2026-10 os_patch_level
 
     cmp unpacked/KERNEL-ramdisk one/initrd
     # gzip stops at the end of its stream; what follows are the device trees.
-    { gzip -9n < one/kernel; cat one/dtbs/qcom/board-a.dtb one/dtbs/qcom/board-b.dtb; } > expected-kernel
+    { gzip -9n < one/kernel; cat stripped-a.dtb stripped-b.dtb; } > expected-kernel
     cmp unpacked/KERNEL-kernel expected-kernel
+    ! grep -q __symbols__ unpacked/KERNEL-kernel
 
     # Same system again: nothing changes, the backup is not overwritten.
     first=$(sha256sum < boot/KERNEL)

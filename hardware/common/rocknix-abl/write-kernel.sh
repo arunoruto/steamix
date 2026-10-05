@@ -24,7 +24,13 @@ for dtb in "${dtbs[@]}"; do
     echo "rocknix-abl: $top has no device tree $dtb" >&2
     exit 1
   fi
-  cat "$top/dtbs/$dtb" >> "$work/kernel.gz"
+  # Without the overlay symbols, as Armada's device trees are.
+  cp "$top/dtbs/$dtb" "$work/dtb"
+  chmod u+w "$work/dtb"
+  if fdtget -l "$work/dtb" / | grep -qx __symbols__; then
+    fdtput -r "$work/dtb" /__symbols__
+  fi
+  cat "$work/dtb" >> "$work/kernel.gz"
 done
 
 cmdline="init=$top/init $(cat "$top/kernel-params")"

@@ -1,5 +1,5 @@
 # An SD card image ROCKNIX ABL boots: an MBR card (Android refuses GPT SD
-# cards) with a FAT partition first, holding /KERNEL and the rocknix_abl/
+# cards) with a bootable FAT32 partition first, holding /KERNEL and the rocknix_abl/
 # flashing folder, then the ext4 root. Build it with
 # `config.system.build.sdImage`; the root partition grows to the card on
 # first boot.
@@ -45,5 +45,11 @@ in
       cp -r ${rocknix-abl}/rocknix_abl firmware/
     '';
     populateRootCommands = "";
+    # The FAT partition as ROCKNIX and Armada make it: FAT32 (LBA) and
+    # marked bootable, where sd-image marks the root partition for U-Boot.
+    postBuildCommands = ''
+      sfdisk --no-reread --no-tell-kernel --part-type "$img" 1 c
+      sfdisk --no-reread --no-tell-kernel --activate "$img" 1
+    '';
   };
 }

@@ -61,8 +61,10 @@ tests; the device itself is the test bench.
 
 Done (2026-10-05), see [Handhelds](./handhelds.md): the kernel, the boot
 image writer, the SD image and the firmware are in `hardware/` and
-`packages/`, with the kernel config and the boot image checked in CI. Left:
-comparing with a real Armada `/KERNEL`, and booting it.
+`packages/`, with the kernel config and the boot image checked in CI. The
+image was compared with Armada's 2026-09-26 release: same partition layout
+and flags, same boot image header (all but the patch-level date), and the
+RP6 device tree decompiles identical. Left: booting it.
 
 1. **Kernel.** `buildLinux` with Linux 7.2.6 and Armada's patch series
    (209 patches: the RP6 panel driver, RSInput gamepad, LEDs, touchscreen,
