@@ -100,6 +100,10 @@ buildFHSEnv {
       zenity
       # taskset: steamwebhelper.sh pins the web helper to cores with it
       util-linux
+      # The client checks with lsof that whoever connects to its UI's
+      # websocket is its own web helper, and rejects them all without it
+      # (error 0x3009).
+      lsof
 
       glibc
       libxcrypt
