@@ -61,9 +61,17 @@ jobs:
           # Pinned so the free tier's garbage collection keeps what machines
           # use; three revisions per package and channel. (Package names do not
           # repeat across systems, so they need no system in the pin name.)
+          # Cachix skips what cache.nixos.org already serves (such as the
+          # Linux tarball among the kernel's sources); there is nothing of
+          # ours to pin then, and pinning it would fail.
           while read -r attr path; do
             cachix push steamix "$path"
-            cachix pin steamix "$attr-${{ matrix.channel.name }}" "$path" --keep-revisions 3
+            hash=$(basename "$path" | cut -d- -f1)
+            if curl -sf -o /dev/null "https://steamix.cachix.org/$hash.narinfo"; then
+              cachix pin steamix "$attr-${{ matrix.channel.name }}" "$path" --keep-revisions 3
+            else
+              echo "::notice::$attr is served by cache.nixos.org; not pinned"
+            fi
           done < outputs
       - name: No token, nothing pushed
         if: env.CACHIX_AUTH_TOKEN == ''
