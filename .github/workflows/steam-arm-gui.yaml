@@ -34,17 +34,19 @@ jobs:
           export HOME="$RUNNER_TEMP/home" XDG_RUNTIME_DIR="$RUNNER_TEMP/run" DISPLAY=:99
           mkdir -p "$HOME" "$XDG_RUNTIME_DIR" shots
           chmod 700 "$XDG_RUNTIME_DIR"
-          xvfb=$(nix build --no-link --print-out-paths nixpkgs#xorg-server)/bin/Xvfb
-          import=$(nix build --no-link --print-out-paths nixpkgs#imagemagick)/bin/import
-          dbus=$(nix build --no-link --print-out-paths nixpkgs#dbus)/bin/dbus-run-session
+          xvfb=$(nix build --no-link --print-out-paths 'nixpkgs#xorg-server^out')/bin/Xvfb
+          import=$(nix build --no-link --print-out-paths 'nixpkgs#imagemagick^out')/bin/import
+          dbus=$(nix build --no-link --print-out-paths 'nixpkgs#dbus^out')/bin/dbus-run-session
           "$xvfb" :99 -screen 0 1280x800x24 &
           sleep 3
           # shellcheck disable=SC2086
           "$dbus" -- ./steam-arm/bin/steam-arm $ARGS > steam.log 2>&1 &
+          steam=$!
           for i in $(seq "$MINUTES"); do
             sleep 60
             "$import" -window root -display :99 "shots/$(printf %02d "$i").png" || true
             echo "minute $i: $(pgrep -fc 'steamwebhelper --type=renderer' || true) renderers"
+            kill -0 "$steam" 2> /dev/null || { echo "steam-arm exited"; break; }
           done
           pkill -f steamrtarm64/steam || true
           sleep 5
