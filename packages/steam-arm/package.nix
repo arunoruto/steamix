@@ -34,6 +34,14 @@ let
   launcher = writeShellScript "steam-arm" ''
     set -euo pipefail
 
+    # Valve's ARM64 client needs ARMv8.1's LSE atomics; without them it
+    # dies with an illegal instruction (a Raspberry Pi 4's Cortex-A72, for
+    # example).
+    if ! grep -qw atomics /proc/cpuinfo; then
+      echo "steam-arm: this CPU lacks the LSE atomics (ARMv8.1) Valve's ARM64 Steam client needs" >&2
+      exit 1
+    fi
+
     steam_root="''${STEAM_ROOT:-$HOME/.local/share/Steam}"
     steam_arm_dir="$steam_root/steamrtarm64"
 
