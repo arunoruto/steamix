@@ -37,7 +37,7 @@ jobs:
       # channels have already disagreed about greetd's PAM stack.
       fail-fast: false
       matrix:
-        test: [greetd, sddm, steamos-manager, decky-loader, library, options, decky-lsfg-vk, rocknix-abl, linux-armada-config]
+        test: [greetd, sddm, steamos-manager, decky-loader, library, emulation, options, decky-lsfg-vk, rocknix-abl, linux-armada-config]
         # unstable: nixos-unstable at the revision flake.lock pins.
         # stable: the current nixos-26.05 channel head, so a release-branch
         #   change that breaks Steamix shows up without waiting for a lock

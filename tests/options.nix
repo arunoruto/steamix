@@ -438,7 +438,33 @@ let
       ) forcedWithProfiles.assertions) "no failing assertion")
     ];
 
-  cases = heroicCases ++ losslessScalingCases ++ losslessDeckyCases ++ protonCases;
+  emulationCases =
+    let
+      names = config: map lib.getName config.environment.systemPackages;
+      off = evalWith { };
+      on = evalWith { steamix.emulation.enable = true; };
+      kioskWithGamingMode = evalWith {
+        steamix.enable = true;
+        steamix.emulation = {
+          enable = true;
+          kiosk.enable = true;
+        };
+      };
+    in
+    [
+      (check "emulation installs nothing by default" (
+        !lib.elem "retroarch-with-cores" (names off)
+      ) "RetroArch")
+      (check "emulation.enable installs RetroArch, without Steamix itself and with free cores" (
+        lib.elem "retroarch-with-cores" (names on)
+        && lib.all (c: c.meta.license.free or true) on.steamix.emulation.retroarch.finalPackage.cores
+      ) (builtins.toJSON (names on)))
+      (check "the kiosk and Gaming Mode cannot share the display" (lib.any (
+        a: !a.assertion && lib.hasInfix "both want the display" a.message
+      ) kioskWithGamingMode.assertions) "no failing assertion")
+    ];
+
+  cases = heroicCases ++ losslessScalingCases ++ losslessDeckyCases ++ protonCases ++ emulationCases;
 in
 assert lib.all (x: x) cases;
 pkgs.runCommand "steamix-options" { } ''

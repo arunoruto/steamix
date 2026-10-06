@@ -259,6 +259,38 @@ nixpkgs' `heroic` runs the launcher in an FHS environment with the libraries
 its games and Wine builds expect; `pkgs.heroic.override { extraPkgs = pkgs:
 [ ... ]; }` adds more.
 
+## `steamix.emulation`
+
+[RetroArch](https://www.retroarch.com) with a set of libretro cores. It
+does not need the rest of Steamix (`steamix.enable`): it also serves
+machines Steam does not run on, such as a Raspberry Pi 4.
+
+| Option | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `.enable` | `bool` | `false` | Install RetroArch with the cores. |
+| `.retroarch.package` | `package` | `pkgs.retroarch-bare` | The frontend the cores and settings are wrapped around. |
+| `.retroarch.cores` | `list of package` | Nestopia, bsnes, mGBA, PCSX ReARMed | The cores, from `pkgs.libretro`. |
+| `.retroarch.settings` | `attrs of string` | `{ }` | `retroarch.cfg` settings applied over the user's own on every start. |
+| `.retroarch.finalPackage` | `package` | read-only | The RetroArch that is installed. |
+| `.kiosk.enable` | `bool` | `false` | Boot straight into RetroArch, full screen in cage, started again when it quits. Not together with Gaming Mode's `autoStart`. |
+| `.kiosk.user` | `null or string` | `steamix.user` | Who RetroArch runs as in the kiosk. |
+
+The default cores are free software and cover NES, SNES, Game Boy / Color /
+Advance and PlayStation. The fastest SNES and Mega Drive cores, Snes9x,
+Genesis Plus GX and PicoDrive, are unfree (non-commercial use only), so
+adding them needs unfree packages allowed; on small ARM boards they are the
+ones to use:
+
+```nix
+steamix.emulation.retroarch.cores = with pkgs.libretro; [
+  nestopia snes9x genesis-plus-gx mgba pcsx-rearmed
+];
+```
+
+Games go in `~/ROMs`, where RetroArch's file browser starts. With Gaming
+Mode, RetroArch is an application in Desktop Mode; add it as a non-Steam
+game to reach it from Gaming Mode.
+
 ## `steamix.library.boilr`
 
 [BoilR](https://github.com/PhilipK/BoilR) puts games from other launchers in

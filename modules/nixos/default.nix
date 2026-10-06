@@ -19,6 +19,7 @@ in
 {
   imports = [
     ./decky-loader.nix
+    ./emulation.nix
     ./heroic.nix
     ./library.nix
     ./lossless-scaling.nix
