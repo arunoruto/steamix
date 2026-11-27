@@ -32,12 +32,21 @@
         pid = retroarch_pid()
         args = machine.succeed(f"tr '\\0' '\\n' < /proc/{pid}/cmdline")
         assert "--fullscreen" in args, args
-        assert "-L" in args, args
         config = next(a.split("=", 1)[1] for a in args.splitlines() if a.startswith("--appendconfig="))
         settings = machine.succeed(f"cat {shlex.quote(config)}")
         assert 'menu_driver = "rgui"' in settings, settings
         assert 'rgui_browser_directory = "~/ROMs"' in settings, settings
-        cores = machine.succeed(f"ls {shlex.quote(args.split('-L')[1].split()[0])}")
+        # nixpkgs' wrapper sets the cores directory in its config
+        # (libretro_directory), or, before 26.11, with -L.
+        cores_dir = next(
+            (
+                line.split("=", 1)[1].strip().strip('"')
+                for line in settings.splitlines()
+                if line.startswith("libretro_directory")
+            ),
+            None,
+        ) or args.split("-L")[1].split()[0]
+        cores = machine.succeed(f"ls {shlex.quote(cores_dir)}")
         for core in ["nestopia", "bsnes", "mgba", "pcsx_rearmed"]:
             assert core in cores, cores
 
