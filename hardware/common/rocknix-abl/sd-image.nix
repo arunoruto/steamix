@@ -52,4 +52,19 @@ in
       sfdisk --no-reread --no-tell-kernel --activate "$img" 1
     '';
   };
+
+  # sd-image's own script, with the partition number trimmed: lsblk pads
+  # MAJ:MIN to its header's width ("253:2  "), which nixpkgs now quotes
+  # into sfdisk -N, so the root partition never grows (sfdisk: failed to
+  # parse partition number).
+  # ponytail: copy of nixpkgs' script; drop once nixpkgs trims it itself.
+  systemd.services.expand-root-partition.script = lib.mkForce ''
+    rootPart=$(${lib.getExe' pkgs.util-linux "findmnt"} -n -o SOURCE /)
+    bootDevice=$(${lib.getExe' pkgs.util-linux "lsblk"} -npo PKNAME "$rootPart")
+    partNum=$(${lib.getExe' pkgs.util-linux "lsblk"} -npo MAJ:MIN "$rootPart" | ${lib.getExe pkgs.gawk} -F: '{print $2 + 0}')
+
+    echo ",+," | ${lib.getExe' pkgs.util-linux "sfdisk"} -N"$partNum" --no-reread "$bootDevice"
+    ${lib.getExe' pkgs.parted "partprobe"}
+    ${lib.getExe' pkgs.e2fsprogs "resize2fs"} "$rootPart"
+  '';
 }
