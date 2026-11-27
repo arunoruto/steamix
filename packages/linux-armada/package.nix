@@ -70,6 +70,17 @@ let
     sed -E '/^[[:space:]]*CONFIG_[A-Z0-9_]+=/ s/[[:space:]]*#.*$//' \
       ${armada}/config/armada-kernel.config.overrides > arch/arm64/configs/armada.config
 
+    # Linux 7.3's UAPI headers (glibc's, in nixpkgs) use __u128 in arm64's
+    # asm/sigcontext.h and asm/ptrace.h; 7.2's tools copy of linux/types.h
+    # shadows the system one without it, so libbpf (resolve_btfids) fails.
+    # Add the typedefs the kernel's own UAPI linux/types.h has.
+    sed -i '/#include <asm\/posix_types.h>/a\
+    #ifdef __SIZEOF_INT128__\
+    typedef __signed__ __int128 __s128 __attribute__((aligned(16)));\
+    typedef unsigned __int128 __u128 __attribute__((aligned(16)));\
+    #endif' tools/include/linux/types.h
+    grep -q __u128 tools/include/linux/types.h
+
     cp -r . "$out"
   '';
 
